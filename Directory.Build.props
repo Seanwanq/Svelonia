@@ -9,10 +9,10 @@
     <Authors>Sean Wang</Authors>
     <Company>Svelonia</Company>
     <Copyright>Copyright © 2025 Sean Wang</Copyright>
-    <PackageProjectUrl>https://github.com/yourusername/Svelonia</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/yourusername/Svelonia</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Seanwanq/Svelonia</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Seanwanq/Svelonia</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    
+
     <!-- Build Settings -->
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
