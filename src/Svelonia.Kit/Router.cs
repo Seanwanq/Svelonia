@@ -18,6 +18,57 @@ public class Router
 {
     private readonly List<RouteEntry> _routes = new();
     private readonly List<RouteGuard> _guards = new();
+    private string _currentPath = "/";
+
+    // Hot Reload Support
+    private static readonly List<WeakReference<Router>> _instances = new();
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public Router()
+    {
+        lock (_instances)
+        {
+            _instances.Add(new WeakReference<Router>(this));
+        }
+    }
+
+    /// <summary>
+    /// Triggers a reload of the current route on all active Router instances.
+    /// Used by Hot Reload handlers.
+    /// </summary>
+    public static void ReloadAll()
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            lock (_instances)
+            {
+                for (int i = _instances.Count - 1; i >= 0; i--)
+                {
+                    if (_instances[i].TryGetTarget(out var router))
+                    {
+                        router.Reload();
+                    }
+                    else
+                    {
+                        _instances.RemoveAt(i);
+                    }
+                }
+            }
+        });
+    }
+
+    /// <summary>
+    /// Reloads the current route.
+    /// </summary>
+    public void Reload()
+    {
+        if (!string.IsNullOrEmpty(_currentPath))
+        {
+            Navigate(_currentPath);
+        }
+    }
 
     /// <summary>
     /// 
@@ -54,6 +105,8 @@ public class Router
     /// <param name="fullPath"></param>
     public async void Navigate(string fullPath)
     {
+        _currentPath = fullPath;
+
         // 1. Run Guards
         foreach (var guard in _guards)
         {
