@@ -7,4 +7,7 @@
     <Project Path="src/Svelonia.Gen/Svelonia.Gen.csproj" />
     <Project Path="src/Svelonia.Kit/Svelonia.Kit.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Svelonia.Tests/Svelonia.Tests.csproj" />
+  </Folder>
 </Solution>
