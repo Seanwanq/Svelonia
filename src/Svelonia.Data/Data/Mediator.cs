@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace Svelonia.Core.Data;
+namespace Svelonia.Data;
 
 /// <summary>
 /// 

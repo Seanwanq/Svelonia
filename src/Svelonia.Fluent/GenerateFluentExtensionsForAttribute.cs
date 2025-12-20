@@ -1,4 +1,4 @@
-namespace Svelonia.Core;
+namespace Svelonia.Fluent;
 
 /// <summary>
 /// 

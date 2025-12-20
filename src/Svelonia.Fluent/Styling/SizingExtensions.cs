@@ -1,6 +1,7 @@
 using Avalonia.Layout;
 
-namespace Svelonia.Core.Styling;
+using Svelonia.Core;
+namespace Svelonia.Fluent;
 
 /// <summary>
 /// 

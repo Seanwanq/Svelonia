@@ -1,7 +1,8 @@
 using System.IO.Compression;
 using Avalonia.Media;
 
-namespace Svelonia.Core.Styling;
+using Svelonia.Core;
+namespace Svelonia.Fluent;
 
 /// <summary>
 /// A subset of the standard Tailwind CSS Color Palette.

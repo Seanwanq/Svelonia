@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Svelonia.Core;
-using Svelonia.Core.Bindings;
+using Svelonia.Fluent;
 using Svelonia.Generated;
 using Svelonia.Kit;
 

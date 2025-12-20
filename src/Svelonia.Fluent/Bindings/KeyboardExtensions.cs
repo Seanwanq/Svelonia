@@ -1,9 +1,10 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Svelonia.Core.Data;
-
-namespace Svelonia.Core.Bindings;
+using Svelonia.Core;
+using Svelonia.Data;
+namespace Svelonia.Fluent;
 
 /// <summary>
 /// 
@@ -48,8 +49,13 @@ public static class KeyboardExtensions
     {
         return control.OnKey(gesture, () =>
         {
-            // Resolve mediator properly
-            Svelonia.GetMediator().Send(command);
+            // Resolve mediator dynamically
+            if (Avalonia.Application.Current is Application app &&
+                app.GetType().GetProperty("Services")?.GetValue(app) is IServiceProvider sp &&
+                sp.GetService(typeof(IMediator)) is IMediator mediator)
+            {
+                mediator.Send(command);
+            }
         }, handled, tunnel);
     }
 
@@ -61,7 +67,12 @@ public static class KeyboardExtensions
     {
         return control.OnKey(gesture, () =>
         {
-            Svelonia.GetMediator().Send(commandFactory());
+            if (Avalonia.Application.Current is Application app &&
+                app.GetType().GetProperty("Services")?.GetValue(app) is IServiceProvider sp &&
+                sp.GetService(typeof(IMediator)) is IMediator mediator)
+            {
+                mediator.Send(commandFactory());
+            }
         }, handled, tunnel);
     }
 }

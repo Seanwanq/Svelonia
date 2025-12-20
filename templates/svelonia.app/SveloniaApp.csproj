@@ -14,6 +14,8 @@
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.*" />
 
     <PackageReference Include="Svelonia.Core" Version="0.0.*" />
+    <PackageReference Include="Svelonia.Data" Version="0.0.*" />
+    <PackageReference Include="Svelonia.Fluent" Version="0.0.*" />
     <PackageReference Include="Svelonia.Kit" Version="0.0.*" />
     <PackageReference Include="Svelonia.Gen" Version="0.0.*" OutputItemType="Analyzer"
       ReferenceOutputAssembly="false" />

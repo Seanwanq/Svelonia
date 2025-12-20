@@ -1,4 +1,5 @@
-namespace Svelonia.Core.Styling;
+using Svelonia.Core;
+namespace Svelonia.Fluent;
 
 /// <summary>
 /// Provides atomic design theme settings

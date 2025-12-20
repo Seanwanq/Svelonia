@@ -32,7 +32,7 @@ public class MediatorGenerator : IIncrementalGenerator
     {
         var handlers = new List<(string RequestType, string ResponseType, string HandlerType)>();
 
-        var requestHandlerInterface = compilation.GetTypeByMetadataName("Svelonia.Core.Data.IRequestHandler`2");
+        var requestHandlerInterface = compilation.GetTypeByMetadataName("Svelonia.Data.IRequestHandler`2");
 
         if (requestHandlerInterface == null) return;
 
@@ -60,7 +60,7 @@ public class MediatorGenerator : IIncrementalGenerator
         sb.AppendLine("using System.Threading;");
         sb.AppendLine("using System.Threading.Tasks;");
         sb.AppendLine("using Microsoft.Extensions.DependencyInjection;");
-        sb.AppendLine("using Svelonia.Core.Data;");
+        sb.AppendLine("using Svelonia.Data;");
         sb.AppendLine();
         sb.AppendLine("namespace Svelonia.Generated");
         sb.AppendLine("{");

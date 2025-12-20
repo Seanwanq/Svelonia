@@ -1,7 +1,7 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Svelonia.Core.Data;
+namespace Svelonia.Data;
 
 /// <summary>
 /// 
@@ -36,14 +36,5 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="services"></param>
-    /// <returns></returns>
-    public static IServiceCollection AddSveloniaServices(this IServiceCollection services)
-    {
-        services.AddSingleton<Services.IDialogService, Services.DialogService>();
-        return services;
-    }
+    // AddSveloniaServices moved to Core
 }
