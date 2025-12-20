@@ -394,7 +394,7 @@ public class BindingGenerator : IIncrementalGenerator
             sb.AppendLine($"            // Special handling for Content to support string conversion");
             sb.AppendLine($"            if (state is State<string> s)");
             sb.AppendLine($"            {{");
-            sb.AppendLine($"                Svelonia.Fluent.Bindings.StyleExtensions.BindContent(control, s);");
+            sb.AppendLine($"                Svelonia.Fluent.StyleExtensions.BindContent(control, s);");
             sb.AppendLine($"            }}");
             sb.AppendLine($"            else");
             sb.AppendLine($"            {{");

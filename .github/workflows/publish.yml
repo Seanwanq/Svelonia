@@ -2,59 +2,61 @@ name: Publish Svelonia
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     tags:
-      - 'v*'
+      - "v*"
+  pull_request:
+    branches: ["main"]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 10.0.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
 
-    # 1. Extract Version
-    # If tag (v1.0.0) -> VERSION = 1.0.0
-    # If branch -> VERSION = 0.0.0-ci-{run_number}
-    - name: Extract Version
-      run: |
-        if [[ $GITHUB_REF == refs/tags/* ]]; then
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
-        else
-          VERSION=0.0.0-ci-$GITHUB_RUN_NUMBER
-          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
-        fi
-        echo "Detected Version: $VERSION"
+      # 1. Extract Version
+      # If tag (v1.0.0) -> VERSION = 1.0.0
+      # If branch -> VERSION = 0.0.0-ci-{run_number}
+      - name: Extract Version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
+          else
+            VERSION=0.0.0-ci-$GITHUB_RUN_NUMBER
+            echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
+          fi
+          echo "Detected Version: $VERSION"
 
-    # 2. Update Template References (Critical!)
-    # We must update the Svelonia.* package versions in the template .csproj
-    # to match the version we are currently releasing.
-    - name: Update Template References
-      run: |
-        echo "Updating template references to ${{ env.RELEASE_VERSION }}..."
-        sed -i -E 's/(Include="Svelonia\.[^"]*" Version=)"[^"]*"/\1"${{ env.RELEASE_VERSION }}"/' templates/svelonia.app/SveloniaApp.csproj
-        # Verify the change
-        cat templates/svelonia.app/SveloniaApp.csproj | grep Svelonia
+      # 2. Update Template References (Critical!)
+      # We must update the Svelonia.* package versions in the template .csproj
+      # to match the version we are currently releasing.
+      - name: Update Template References
+        run: |
+          echo "Updating template references to ${{ env.RELEASE_VERSION }}..."
+          sed -i -E 's/(Include="Svelonia\.[^"]*" Version=)"[^"]*"/\1"${{ env.RELEASE_VERSION }}"/' templates/svelonia.app/SveloniaApp.csproj
+          # Verify the change
+          cat templates/svelonia.app/SveloniaApp.csproj | grep Svelonia
 
-    # 3. Pack (Override Directory.Build.props version with -p:Version)
-    - name: Pack with Version
-      run: |
-        dotnet pack src/Svelonia.Core/Svelonia.Core.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
-        dotnet pack src/Svelonia.Data/Svelonia.Data.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
-        dotnet pack src/Svelonia.Fluent/Svelonia.Fluent.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
-        dotnet pack src/Svelonia.Kit/Svelonia.Kit.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
-        dotnet pack src/Svelonia.Gen/Svelonia.Gen.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
-        dotnet pack src/Svelonia.DevTools/Svelonia.DevTools.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
-        dotnet pack templates/Svelonia.Templates.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
+      # 3. Pack (Override Directory.Build.props version with -p:Version)
+      - name: Pack with Version
+        run: |
+          dotnet pack src/Svelonia.Core/Svelonia.Core.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
+          dotnet pack src/Svelonia.Data/Svelonia.Data.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
+          dotnet pack src/Svelonia.Fluent/Svelonia.Fluent.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
+          dotnet pack src/Svelonia.Kit/Svelonia.Kit.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
+          dotnet pack src/Svelonia.Gen/Svelonia.Gen.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
+          dotnet pack src/Svelonia.DevTools/Svelonia.DevTools.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
+          dotnet pack templates/Svelonia.Templates.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
 
-    # 4. Publish to NuGet (Only for tags)
-    - name: Push to NuGet
-      if: startsWith(github.ref, 'refs/tags/')
-      run: |
-        dotnet nuget push artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      # 4. Publish to NuGet (Only for tags)
+      - name: Push to NuGet
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          dotnet nuget push artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
