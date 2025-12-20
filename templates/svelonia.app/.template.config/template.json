@@ -1,0 +1,20 @@
+{
+    "$schema": "http://json.schemastore.org/template",
+    "author": "Sean Wang",
+    "classifications": [
+        "Avalonia",
+        "Svelte",
+        "Svelonia",
+        "UI"
+    ],
+    "name": "Svelonia App",
+    "identity": "Svelonia.App",
+    "groupIdentity": "Svelonia.App",
+    "shortName": "svelonia.app",
+    "tags": {
+        "language": "C#",
+        "type": "project"
+    },
+    "sourceName": "SveloniaApp",
+    "preferNameDirectory": true
+}
