@@ -13,11 +13,13 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.*" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.*" />
 
-    <PackageReference Include="Svelonia.Core" Version="1.0.0" />
-    <PackageReference Include="Svelonia.Kit" Version="1.0.0" />
-    <PackageReference Include="Svelonia.Gen" Version="1.0.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <PackageReference Include="Svelonia.Core" Version="0.0.*" />
+    <PackageReference Include="Svelonia.Kit" Version="0.0.*" />
+    <PackageReference Include="Svelonia.Gen" Version="0.0.*" OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />
 
-    <PackageReference Include="Svelonia.DevTools" Version="1.0.0" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="Svelonia.DevTools" Version="0.0.*"
+      Condition="'$(Configuration)' == 'Debug'" />
 
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
   </ItemGroup>
