@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using Avalonia.Themes.Fluent;
 
-namespace Svelonia.App.Template;
+namespace SveloniaApp;
 
 public class App : Application
 {

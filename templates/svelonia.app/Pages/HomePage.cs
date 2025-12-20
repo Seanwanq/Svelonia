@@ -5,7 +5,7 @@ using Svelonia.Core.Bindings;
 using Svelonia.Generated;
 using Svelonia.Kit;
 
-namespace Svelonia.App.Template.Pages;
+namespace SveloniaApp.Pages;
 
 public class HomePage : Page
 {

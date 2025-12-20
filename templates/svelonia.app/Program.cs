@@ -1,7 +1,7 @@
 using Avalonia;
 using System;
 
-namespace Svelonia.App.Template;
+namespace SveloniaApp;
 
 class Program
 {

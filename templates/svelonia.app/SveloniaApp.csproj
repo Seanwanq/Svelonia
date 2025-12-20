@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <Nullable>enable</Nullable>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.*" />
+
+    <PackageReference Include="Svelonia.Core" Version="1.0.0" />
+    <PackageReference Include="Svelonia.Kit" Version="1.0.0" />
+    <PackageReference Include="Svelonia.Gen" Version="1.0.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+
+    <PackageReference Include="Svelonia.DevTools" Version="1.0.0" Condition="'$(Configuration)' == 'Debug'" />
+
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+  </ItemGroup>
+
+</Project>

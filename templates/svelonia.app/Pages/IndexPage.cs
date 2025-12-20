@@ -4,7 +4,9 @@ using Svelonia.Kit;
 using Svelonia.Core;
 using Svelonia.Generated;
 
-namespace Svelonia.App.Template.Pages;
+namespace SveloniaApp.Pages;
+
+using SveloniaApp;
 
 public class IndexPage : Page
 {
