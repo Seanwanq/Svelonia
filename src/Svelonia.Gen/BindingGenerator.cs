@@ -27,6 +27,7 @@ public class BindingGenerator : IIncrementalGenerator
         sb.AppendLine("using Avalonia.Media;");
         sb.AppendLine("using Avalonia.Data;");
         sb.AppendLine("using Svelonia.Core;");
+        sb.AppendLine("using Svelonia.Fluent;");
         sb.AppendLine("using System.Collections.Generic;");
         sb.AppendLine();
         sb.AppendLine("namespace Svelonia.Generated");
@@ -41,7 +42,7 @@ public class BindingGenerator : IIncrementalGenerator
 
         // A. Scan [GenerateFluentExtensionsFor] Attributes
         var attributes = compilation.Assembly.GetAttributes();
-        var attrType = compilation.GetTypeByMetadataName("Svelonia.Core.GenerateFluentExtensionsForAttribute");
+        var attrType = compilation.GetTypeByMetadataName("Svelonia.Fluent.GenerateFluentExtensionsForAttribute");
 
         if (attrType != null)
         {
@@ -393,7 +394,7 @@ public class BindingGenerator : IIncrementalGenerator
             sb.AppendLine($"            // Special handling for Content to support string conversion");
             sb.AppendLine($"            if (state is State<string> s)");
             sb.AppendLine($"            {{");
-            sb.AppendLine($"                Svelonia.Core.Bindings.StyleExtensions.BindContent(control, s);");
+            sb.AppendLine($"                Svelonia.Fluent.Bindings.StyleExtensions.BindContent(control, s);");
             sb.AppendLine($"            }}");
             sb.AppendLine($"            else");
             sb.AppendLine($"            {{");
@@ -416,7 +417,7 @@ public class BindingGenerator : IIncrementalGenerator
 
         if (isAvaloniaProp)
         {
-            sb.AppendLine($"            Binder.Bind(control, {typeName}.{propName}Property, state);");
+            sb.AppendLine($"            Svelonia.Fluent.Binder.Bind(control, {typeName}.{propName}Property, state);");
         }
         else
         {

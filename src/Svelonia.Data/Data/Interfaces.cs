@@ -1,4 +1,4 @@
-namespace Svelonia.Core.Data;
+namespace Svelonia.Data;
 
 /// <summary>
 /// Marker interface for a request that returns a response.

@@ -3,7 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 
-namespace Svelonia.Core.Bindings;
+using Svelonia.Core;
+namespace Svelonia.Fluent;
 
 /// <summary>
 /// 

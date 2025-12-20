@@ -1,7 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using Avalonia.Threading;
 
-namespace Svelonia.Core.Data;
+using Svelonia.Core;
+namespace Svelonia.Data;
 
 /// <summary>
 /// 

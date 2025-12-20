@@ -1,7 +1,9 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Svelonia.Core/Svelonia.Core.csproj" />
+    <Project Path="src/Svelonia.Data/Svelonia.Data.csproj" />
     <Project Path="src/Svelonia.DevTools/Svelonia.DevTools.csproj" />
+    <Project Path="src/Svelonia.Fluent/Svelonia.Fluent.csproj" />
     <Project Path="src/Svelonia.Gen/Svelonia.Gen.csproj" />
     <Project Path="src/Svelonia.Kit/Svelonia.Kit.csproj" />
   </Folder>

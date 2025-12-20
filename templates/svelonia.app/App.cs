@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Svelonia.Core;
-using Svelonia.Core.Data;
+using Svelonia.Data;
 using Svelonia.Kit;
 using Svelonia.Generated;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,7 +29,7 @@ public class App : Application
 
             // Register Framework Services
             collection.AddSveloniaDataAot();
-            collection.AddSveloniaServices();
+            collection.AddSveloniaCore();
             collection.AddSingleton(Router);
 
             Services = collection.BuildServiceProvider();

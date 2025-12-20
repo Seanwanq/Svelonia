@@ -1,8 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
-using Svelonia.Core.Data;
+using Svelonia.Data;
 
-namespace Svelonia.Core.Bindings;
+using Svelonia.Core;
+namespace Svelonia.Fluent;
 
 /// <summary>
 /// 

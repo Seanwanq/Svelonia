@@ -1,4 +1,5 @@
-namespace Svelonia.Core.Responsive;
+using Svelonia.Core;
+namespace Svelonia.Fluent;
 
 /// <summary>
 /// 
