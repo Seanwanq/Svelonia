@@ -265,6 +265,7 @@ public class BindingGenerator : IIncrementalGenerator
         // Panel Children
         public static T Children<T>(this T control, params Control[] children) where T : Panel
         {
+            foreach (var child in children) child.DetachFromParent();
             control.Children.AddRange(children);
             return control;
         }
@@ -276,11 +277,19 @@ public class BindingGenerator : IIncrementalGenerator
             {
                 if (lastControl != null) control.Children.Remove(lastControl);
                 lastControl = v;
-                if (v != null) control.Children.Add(v);
+                if (v != null) 
+                {
+                    v.DetachFromParent();
+                    control.Children.Add(v);
+                }
             }
             
             lastControl = childState.Value;
-            if (lastControl != null) control.Children.Add(lastControl);
+            if (lastControl != null) 
+            {
+                lastControl.DetachFromParent();
+                control.Children.Add(lastControl);
+            }
 
             if (control is Control c)
             {
@@ -298,10 +307,12 @@ public class BindingGenerator : IIncrementalGenerator
             {
                 foreach (var child in lastChildren) control.Children.Remove(child);
                 lastChildren = v.ToList();
+                foreach (var child in lastChildren) child.DetachFromParent();
                 control.Children.AddRange(lastChildren);
             }
 
             lastChildren = childrenState.Value.ToList();
+            foreach (var child in lastChildren) child.DetachFromParent();
             control.Children.AddRange(lastChildren);
 
             if (control is Control c)
@@ -337,12 +348,18 @@ public class BindingGenerator : IIncrementalGenerator
         // Child Helper
         public static T Child<T>(this T control, Control child) where T : Decorator
         {
+            child.DetachFromParent();
             control.Child = child;
             return control;
         }
         public static T Child<T>(this T control, State<Control> childState) where T : Decorator
         {
-             void Handler(Control v) => control.Child = v;
+             void Handler(Control v) 
+             {
+                 v?.DetachFromParent();
+                 control.Child = v;
+             }
+             if (childState.Value != null) childState.Value.DetachFromParent();
              control.Child = childState.Value;
              if(control is Control c)
              {
@@ -399,37 +416,122 @@ public class BindingGenerator : IIncrementalGenerator
         {
             if (prop.GetAttributes().Any(a => a.AttributeClass?.Name == "ObsoleteAttribute")) continue;
             // FontSize is allowed now
-            GeneratePropertyExtension(sb, typeName, prop);
+            bool isControl = InheritsFrom(type, "Control") || type.Name == "Control";
+            GeneratePropertyExtension(sb, typeName, prop, isControl);
         }
 
         sb.AppendLine("    }");
     }
 
-    private void GeneratePropertyExtension(StringBuilder sb, string typeName, IPropertySymbol prop)
-    {
-        var propName = prop.Name;
-        var propType = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        private void GeneratePropertyExtension(StringBuilder sb, string typeName, IPropertySymbol prop, bool isControl)
 
-        // Skip manual helpers
-        if ((propName == "Child" && typeName.EndsWith("Decorator")) ||
-            (propName == "Children" && typeName.EndsWith("Panel")) ||
-            (propName == "ColumnDefinitions" && typeName.EndsWith("Grid")) ||
-            (propName == "RowDefinitions" && typeName.EndsWith("Grid")))
         {
-            return;
-        }
 
-        // Value Setter
-        sb.AppendLine($"        public static T {propName}<T>(this T control, {propType} value) where T : {typeName}");
-        sb.AppendLine("        {");
-        sb.AppendLine($"            control.{propName} = value;");
-        sb.AppendLine("            return control;");
-        sb.AppendLine("        }");
+            var propName = prop.Name;
+
+            var propType = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+    
+
+            // Check Avalonia Property
+
+            var avaloniaPropField = prop.ContainingType.GetMembers($"{propName}Property").FirstOrDefault();
+
+            bool isAvaloniaProp = avaloniaPropField != null && avaloniaPropField.IsStatic;
+
+    
+
+            // Determine parameter type for hover/pressed (nullable version of propType)
+
+            string paramType = propType;
+
+            if (prop.Type.IsValueType)
+
+            {
+
+                if (prop.Type.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T)
+
+                    paramType += "?";
+
+            }
+
+            else
+
+            {
+
+                if (!propType.EndsWith("?"))
+
+                    paramType += "?";
+
+            }
+
+    
+
+            // Skip manual helpers
+
+            if ((propName == "Child" && typeName.EndsWith("Decorator")) ||
+
+                (propName == "Children" && typeName.EndsWith("Panel")) ||
+
+                (propName == "ColumnDefinitions" && typeName.EndsWith("Grid")) ||
+
+                (propName == "RowDefinitions" && typeName.EndsWith("Grid")))
+
+            {
+
+                return;
+
+            }
+
+    
+
+            // Value Setter
+
+            sb.AppendLine($"        public static T {propName}<T>(this T control, {propType} value, {paramType} hover = default, {paramType} pressed = default) where T : {typeName}");
+
+            sb.AppendLine("        {");
+
+            sb.AppendLine("            if (hover == null && pressed == null)");
+
+            sb.AppendLine("            {");
+
+            sb.AppendLine($"                if ((object?)value is Avalonia.Controls.Control ctrl) ctrl.DetachFromParent();");
+
+            sb.AppendLine($"                control.{propName} = value;");
+
+            sb.AppendLine("            }");
+
+            sb.AppendLine("            else");
+
+            sb.AppendLine("            {");
+
+            if (isAvaloniaProp && isControl)
+
+            {
+
+                 sb.AppendLine($"                Svelonia.Fluent.ControlStyleExtensions.SetStateProperty(control, {typeName}.{propName}Property, value, hover, pressed);");
+
+            }
+
+            else
+
+            {
+
+                 sb.AppendLine($"                if ((object?)value is Avalonia.Controls.Control ctrl) ctrl.DetachFromParent();");
+
+                 sb.AppendLine($"                control.{propName} = value;");
+
+            }
+
+            sb.AppendLine("            }");
+
+            sb.AppendLine("            return control;");
+
+            sb.AppendLine("        }");
+
+    
 
         // State Setter
-        var avaloniaPropField = prop.ContainingType.GetMembers($"{propName}Property").FirstOrDefault();
-        bool isAvaloniaProp = avaloniaPropField != null && avaloniaPropField.IsStatic;
-
         if (isAvaloniaProp)
         {
             // Dynamic Resource Setter
@@ -447,22 +549,23 @@ public class BindingGenerator : IIncrementalGenerator
             sb.AppendLine($"        public static T {propName}<T, TState>(this T control, State<TState> state) where T : {typeName}");
             sb.AppendLine("        {");
             sb.AppendLine($"            // Special handling for Content to support string conversion");
-            sb.AppendLine($"            if (state is State<string> s)");
-            sb.AppendLine($"            {{");
-            sb.AppendLine($"                Svelonia.Fluent.StyleExtensions.BindContent(control, s);");
-            sb.AppendLine($"            }}");
-            sb.AppendLine($"            else");
-            sb.AppendLine($"            {{");
-            sb.AppendLine($"                void Handler(TState val) => control.Content = val;");
-            sb.AppendLine($"                control.Content = state.Value;");
-            sb.AppendLine($"                if(control is Avalonia.Controls.Control c)");
-            sb.AppendLine($"                {{");
-            sb.AppendLine($"                    c.AttachedToVisualTree += (s, e) => {{ control.Content = state.Value; state.OnChange += Handler; }};");
-            sb.AppendLine($"                    c.DetachedFromVisualTree += (s, e) => {{ state.OnChange -= Handler; }};");
-            sb.AppendLine($"                    if (c.IsLoaded) state.OnChange += Handler;");
-            sb.AppendLine($"                }}");
-            sb.AppendLine($"            }}");
-            sb.AppendLine("            return control;");
+                        sb.AppendLine($"            if (state is State<string> s)");
+                        sb.AppendLine($"            {{");
+                        sb.AppendLine($"                Svelonia.Fluent.StyleExtensions.BindContent(control, s);");
+                        sb.AppendLine($"            }}");
+                        sb.AppendLine($"            else");
+                        sb.AppendLine($"            {{");
+                        sb.AppendLine($"                void Handler(TState val) {{ if ((object?)val is Avalonia.Controls.Control ctrl) ctrl.DetachFromParent(); control.Content = val; }}");
+                        sb.AppendLine($"                if ((object?)state.Value is Avalonia.Controls.Control ctrlVal) ctrlVal.DetachFromParent();");
+                        sb.AppendLine($"                control.Content = state.Value;");
+                        sb.AppendLine($"                if(control is Avalonia.Controls.Control c)");
+                        sb.AppendLine($"                {{");
+                        sb.AppendLine($"                    c.AttachedToVisualTree += (s, e) => {{ if ((object?)state.Value is Avalonia.Controls.Control ctrlInit) ctrlInit.DetachFromParent(); control.Content = state.Value; state.OnChange += Handler; }};");
+                        sb.AppendLine($"                    c.DetachedFromVisualTree += (s, e) => {{ state.OnChange -= Handler; }};");
+                        sb.AppendLine($"                    if (c.IsLoaded) state.OnChange += Handler;");
+                        sb.AppendLine($"                }}");
+                        sb.AppendLine($"            }}");
+                        sb.AppendLine("            return control;");
             sb.AppendLine("        }");
             return;
         }

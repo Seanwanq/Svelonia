@@ -1,3 +1,4 @@
+using Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Svelonia.Core;
@@ -23,5 +24,25 @@ public static class SveloniaCoreExtensions
     {
         services.AddSveloniaCore();
         return services;
+    }
+
+    /// <summary>
+    /// Safely detaches a control from its parent (Panel, Decorator, or ContentControl)
+    /// </summary>
+    public static void DetachFromParent(this Control? control)
+    {
+        if (control == null) return;
+        if (control.Parent is Panel p)
+        {
+            p.Children.Remove(control);
+        }
+        else if (control.Parent is Decorator d)
+        {
+            d.Child = null;
+        }
+        else if (control.Parent is ContentControl cc)
+        {
+            cc.Content = null;
+        }
     }
 }

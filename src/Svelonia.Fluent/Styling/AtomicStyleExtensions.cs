@@ -7,160 +7,104 @@ using Svelonia.Core;
 namespace Svelonia.Fluent;
 
 /// <summary>
-/// 
+/// Atomic utility extensions for Svelonia (Tailwind-like)
 /// </summary>
-public static class StyleHelpers_TemplatedControl
+public static class AtomicStyleExtensions
 {
     /// <summary>
-    /// Backgroud
+    /// Background
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="control"></param>
-    /// <param name="brush"></param>
-    /// <returns></returns>
-    public static T Bg<T>(this T control, IBrush brush) where T : TemplatedControl
-    {
-        control.Background = brush;
-        return control;
-    }
-
-    /// <summary>
-    /// Backgroud (Dynamic Resource)
-    /// </summary>
-    public static T Bg<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : TemplatedControl
-    {
-        control.Bind(TemplatedControl.BackgroundProperty, resource);
-        return control;
-    }
+    public static T Bg<T>(this T control, object brush, object? hover = null, object? pressed = null) where T : Control
+        => control.Background(brush, hover, pressed);
 
     /// <summary>
     /// Text Color
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="control"></param>
-    /// <param name="brush"></param>
-    /// <returns></returns>
-    public static T Fg<T>(this T control, IBrush brush) where T : TemplatedControl
-    {
-        control.Foreground = brush;
-        return control;
-    }
-
-    /// <summary>
-    /// Text Color (Dynamic Resource)
-    /// </summary>
-    public static T Fg<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : TemplatedControl
-    {
-        control.Bind(TemplatedControl.ForegroundProperty, resource);
-        return control;
-    }
-}
-
-/// <summary>
-/// 
-/// </summary>
-public static class StyleHelpers_Panel
-{
-    /// <summary>
-    /// Backgroud
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="control"></param>
-    /// <param name="brush"></param>
-    /// <returns></returns>
-    public static T Bg<T>(this T control, IBrush brush) where T : Panel
-    {
-        control.Background = brush;
-        return control;
-    }
-
-    /// <summary>
-    /// Backgroud (Dynamic Resource)
-    /// </summary>
-    public static T Bg<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : Panel
-    {
-        control.Bind(Panel.BackgroundProperty, resource);
-        return control;
-    }
-}
-
-/// <summary>
-/// 
-/// </summary>
-public static class StyleHelpers_Border
-{
-    /// <summary>
-    /// Backgroud
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="control"></param>
-    /// <param name="brush"></param>
-    /// <returns></returns>
-    public static T Bg<T>(this T control, IBrush brush) where T : Border
-    {
-        control.Background = brush;
-        return control;
-    }
-
-    /// <summary>
-    /// Backgroud (Dynamic Resource)
-    /// </summary>
-    public static T Bg<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : Border
-    {
-        control.Bind(Border.BackgroundProperty, resource);
-        return control;
-    }
+    public static T Fg<T>(this T control, object brush, object? hover = null, object? pressed = null) where T : Control
+        => control.Foreground(brush, hover, pressed);
 
     /// <summary>
     /// Rounded Corners
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="control"></param>
-    /// <param name="units"></param>
-    /// <returns></returns>
-    public static T Rounded<T>(this T control, double units = 1) where T : Border
+    public static T Rounded<T>(this T control, double units = 1, double? hover = null, double? pressed = null) where T : Control
     {
-        control.CornerRadius = new CornerRadius(AtomicTheme.GetSize(units));
+        var normal = new CornerRadius(AtomicTheme.GetSize(units));
+        var h = hover.HasValue ? new CornerRadius(AtomicTheme.GetSize(hover.Value)) : (object?)null;
+        var p = pressed.HasValue ? new CornerRadius(AtomicTheme.GetSize(pressed.Value)) : (object?)null;
+        return control.CornerRadius(normal, h, p);
+    }
+
+    /// <summary>
+    /// Fully Rounded Corners (Pill shape)
+    /// </summary>
+    public static T RoundedFull<T>(this T control) where T : Control
+        => control.CornerRadius(new CornerRadius(9999));
+
+    /// <summary>
+    /// Padding
+    /// </summary>
+    public static T P<T>(this T control, double uniform, double? hover = null, double? pressed = null) where T : Control
+    {
+        var normal = new Thickness(AtomicTheme.GetSize(uniform));
+        var h = hover.HasValue ? new Thickness(AtomicTheme.GetSize(hover.Value)) : (object?)null;
+        var p = pressed.HasValue ? new Thickness(AtomicTheme.GetSize(pressed.Value)) : (object?)null;
+        return control.Padding(normal, h, p);
+    }
+
+    /// <summary>
+    /// Horizontal and Vertical Padding
+    /// </summary>
+    public static T P<T>(this T control, double horizontal, double vertical) where T : Control
+        => control.Padding(new Thickness(AtomicTheme.GetSize(horizontal), AtomicTheme.GetSize(vertical)));
+
+    /// <summary>
+    /// Left, Top, Right, Bottom Padding
+    /// </summary>
+    public static T P<T>(this T control, double left, double top, double right, double bottom) where T : Control
+        => control.Padding(new Thickness(AtomicTheme.GetSize(left), AtomicTheme.GetSize(top), AtomicTheme.GetSize(right), AtomicTheme.GetSize(bottom)));
+
+    /// <summary>
+    /// Margin
+    /// </summary>
+    public static T M<T>(this T control, double uniform) where T : Control
+    {
+        control.Margin = new Thickness(AtomicTheme.GetSize(uniform));
         return control;
     }
 
     /// <summary>
-    /// 
+    /// Horizontal and Vertical Margin
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="control"></param>
-    /// <returns></returns>
-    public static T RoundedFull<T>(this T control) where T : Border
+    public static T M<T>(this T control, double horizontal, double vertical) where T : Control
     {
-        control.CornerRadius = new CornerRadius(9999);
-        return control;
-    }
-}
-
-/// <summary>
-/// 
-/// </summary>
-public static class StyleHelpers_TextBlock
-{
-    /// <summary>
-    /// Text Color
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="control"></param>
-    /// <param name="brush"></param>
-    /// <returns></returns>
-    public static T Fg<T>(this T control, IBrush brush) where T : TextBlock
-    {
-        control.Foreground = brush;
+        control.Margin = new Thickness(AtomicTheme.GetSize(horizontal), AtomicTheme.GetSize(vertical));
         return control;
     }
 
     /// <summary>
-    /// Text Color (Dynamic Resource)
+    /// Border Thickness
     /// </summary>
-    public static T Fg<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : TextBlock
+    public static T Border<T>(this T control, double uniform, object? hover = null, object? pressed = null) where T : Control
     {
-        control.Bind(TextBlock.ForegroundProperty, resource);
+        var normal = new Thickness(uniform);
+        return control.BorderThickness(normal, hover, pressed);
+    }
+
+    /// <summary>
+    /// Width
+    /// </summary>
+    public static T W<T>(this T control, double value) where T : Control
+    {
+        control.Width = value;
+        return control;
+    }
+
+    /// <summary>
+    /// Height
+    /// </summary>
+    public static T H<T>(this T control, double value) where T : Control
+    {
+        control.Height = value;
         return control;
     }
 }
