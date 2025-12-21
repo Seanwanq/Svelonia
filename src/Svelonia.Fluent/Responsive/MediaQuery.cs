@@ -40,7 +40,7 @@ public enum ScreenType
 public enum DeviceOrientation
 {
     /// <summary>
-    /// Width < Height
+    /// Width &lt; Height
     /// </summary>
     Portrait,
 

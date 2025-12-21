@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
@@ -95,4 +96,19 @@ public static class StyleSetterExtensions
     /// 
     /// </summary>
     public static Style CornerRadius(this Style style, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) => style.Setter(Border.CornerRadiusProperty, resource);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public static Style Opacity(this Style style, double value) => style.Setter(Visual.OpacityProperty, value);
+
+    /// <summary>
+    /// Adds transitions to the style.
+    /// </summary>
+    public static Style Transitions(this Style style, params ITransition[] transitions)
+    {
+        var collection = new Transitions();
+        collection.AddRange(transitions);
+        return style.Setter(Control.TransitionsProperty, collection);
+    }
 }
