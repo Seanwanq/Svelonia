@@ -68,6 +68,15 @@ public class State<T>(T initialValue) : IDependency
         _observers.Remove(observer);
     }
 
+    /// <summary>
+    /// Manually trigger the OnChange event and notify observers.
+    /// </summary>
+    public void Notify()
+    {
+        OnChange?.Invoke(_value);
+        NotifyObservers();
+    }
+
     private void NotifyObservers()
     {
         if (_observers.Count == 0) return;

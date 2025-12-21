@@ -18,6 +18,7 @@ public class Router
 {
     private readonly List<RouteEntry> _routes = new();
     private readonly List<RouteGuard> _guards = new();
+    private readonly Dictionary<string, Component> _cache = new();
     private string _currentPath = "/";
 
     /// <summary>
@@ -38,6 +39,8 @@ public class Router
     {
         if (!string.IsNullOrEmpty(_currentPath))
         {
+            // Clear cache for current path on reload to ensure fresh component
+            _cache.Remove(_currentPath);
             Navigate(_currentPath);
         }
     }
@@ -53,13 +56,14 @@ public class Router
     public State<bool> IsLoading { get; } = new(false);
 
     /// <summary>
-    /// 
+    /// Registers a route.
     /// </summary>
-    /// <param name="pattern"></param>
-    /// <param name="factory"></param>
-    public void Register(string pattern, Func<RouteParams, Task<Component>> factory)
+    /// <param name="pattern">Route pattern (e.g. /user/{id})</param>
+    /// <param name="factory">Component factory</param>
+    /// <param name="keepAlive">Whether to cache the component instance</param>
+    public void Register(string pattern, Func<RouteParams, Task<Component>> factory, bool keepAlive = false)
     {
-        _routes.Add(new RouteEntry(pattern, factory));
+        _routes.Add(new RouteEntry(pattern, factory, keepAlive));
     }
 
     /// <summary>
@@ -85,10 +89,17 @@ public class Router
             if (!await guard(fullPath)) return; // Guard cancelled navigation
         }
 
+        // 2. Check Cache
+        if (_cache.TryGetValue(fullPath, out var cachedComponent))
+        {
+            CurrentView.Value = cachedComponent;
+            return;
+        }
+
         IsLoading.Value = true;
         try
         {
-            // 2. Parse Query Params
+            // 3. Parse Query Params
             var parts = fullPath.Split('?');
             var path = parts[0];
             var query = parts.Length > 1 ? parts[1] : "";
@@ -126,6 +137,12 @@ public class Router
                     // Create Component
                     var component = await route.Factory(p);
 
+                    // 4. Cache if keepAlive
+                    if (route.KeepAlive)
+                    {
+                        _cache[fullPath] = component;
+                    }
+
                     CurrentView.Value = component;
                     return;
                 }
@@ -143,10 +160,12 @@ public class Router
     {
         public Regex Regex { get; }
         public Func<RouteParams, Task<Component>> Factory { get; }
+        public bool KeepAlive { get; }
 
-        public RouteEntry(string pattern, Func<RouteParams, Task<Component>> factory)
+        public RouteEntry(string pattern, Func<RouteParams, Task<Component>> factory, bool keepAlive = false)
         {
             Factory = factory;
+            KeepAlive = keepAlive;
             var escaped = Regex.Escape(pattern).Replace(@"\{", "{").Replace(@"\}", "}");
             var regexPattern = "^" + Regex.Replace(escaped, @"\{(\w+)\}", "(?<$1>[^/]+)") + "$";
             Regex = new Regex(regexPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);

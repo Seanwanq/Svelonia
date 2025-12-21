@@ -114,4 +114,9 @@ public static class Tw
     /// 
     /// </summary>
     public static IBrush Transparent = Brushes.Transparent;
+
+    /// <summary>
+    /// Creates a DynamicResourceExtension for the given key.
+    /// </summary>
+    public static Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension Resource(string key) => new(key);
 }

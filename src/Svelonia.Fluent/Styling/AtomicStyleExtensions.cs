@@ -25,15 +25,33 @@ public static class StyleHelpers_TemplatedControl
     }
 
     /// <summary>
+    /// Backgroud (Dynamic Resource)
+    /// </summary>
+    public static T Bg<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : TemplatedControl
+    {
+        control.Bind(TemplatedControl.BackgroundProperty, resource);
+        return control;
+    }
+
+    /// <summary>
     /// Text Color
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="control"></param>
     /// <param name="brush"></param>
     /// <returns></returns>
-    public static T Text<T>(this T control, IBrush brush) where T : TemplatedControl
+    public static T Fg<T>(this T control, IBrush brush) where T : TemplatedControl
     {
         control.Foreground = brush;
+        return control;
+    }
+
+    /// <summary>
+    /// Text Color (Dynamic Resource)
+    /// </summary>
+    public static T Fg<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : TemplatedControl
+    {
+        control.Bind(TemplatedControl.ForegroundProperty, resource);
         return control;
     }
 }
@@ -55,6 +73,15 @@ public static class StyleHelpers_Panel
         control.Background = brush;
         return control;
     }
+
+    /// <summary>
+    /// Backgroud (Dynamic Resource)
+    /// </summary>
+    public static T Bg<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : Panel
+    {
+        control.Bind(Panel.BackgroundProperty, resource);
+        return control;
+    }
 }
 
 /// <summary>
@@ -72,6 +99,15 @@ public static class StyleHelpers_Border
     public static T Bg<T>(this T control, IBrush brush) where T : Border
     {
         control.Background = brush;
+        return control;
+    }
+
+    /// <summary>
+    /// Backgroud (Dynamic Resource)
+    /// </summary>
+    public static T Bg<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : Border
+    {
+        control.Bind(Border.BackgroundProperty, resource);
         return control;
     }
 
@@ -113,9 +149,18 @@ public static class StyleHelpers_TextBlock
     /// <param name="control"></param>
     /// <param name="brush"></param>
     /// <returns></returns>
-    public static T Text<T>(this T control, IBrush brush) where T : TextBlock
+    public static T Fg<T>(this T control, IBrush brush) where T : TextBlock
     {
         control.Foreground = brush;
+        return control;
+    }
+
+    /// <summary>
+    /// Text Color (Dynamic Resource)
+    /// </summary>
+    public static T Fg<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : TextBlock
+    {
+        control.Bind(TextBlock.ForegroundProperty, resource);
         return control;
     }
 }

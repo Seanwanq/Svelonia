@@ -15,4 +15,13 @@ public static class SveloniaCoreExtensions
         services.AddSingleton<Services.IDialogService, Services.DialogService>();
         return services;
     }
+
+    /// <summary>
+    /// Combined registration for Svelonia Core and standard dependencies
+    /// </summary>
+    public static IServiceCollection AddSvelonia(this IServiceCollection services)
+    {
+        services.AddSveloniaCore();
+        return services;
+    }
 }
