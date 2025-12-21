@@ -75,6 +75,11 @@ public static class StyleSetterExtensions
     /// <summary>
     /// 
     /// </summary>
+    public static Style Padding(this Style style, double horizontal, double vertical) => style.Setter(TemplatedControl.PaddingProperty, new Thickness(horizontal, vertical));
+
+    /// <summary>
+    /// 
+    /// </summary>
     public static Style Padding(this Style style, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) => style.Setter(TemplatedControl.PaddingProperty, resource);
 
     /// <summary>
@@ -90,12 +95,12 @@ public static class StyleSetterExtensions
     /// <summary>
     /// 
     /// </summary>
-    public static Style CornerRadius(this Style style, double uniform) => style.Setter(Border.CornerRadiusProperty, new CornerRadius(uniform));
+    public static Style CornerRadius(this Style style, double uniform) => style.Setter(TemplatedControl.CornerRadiusProperty, new CornerRadius(uniform));
 
     /// <summary>
     /// 
     /// </summary>
-    public static Style CornerRadius(this Style style, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) => style.Setter(Border.CornerRadiusProperty, resource);
+    public static Style CornerRadius(this Style style, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) => style.Setter(TemplatedControl.CornerRadiusProperty, resource);
 
     /// <summary>
     /// 
