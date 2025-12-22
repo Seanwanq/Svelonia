@@ -22,11 +22,50 @@ public static class KeyboardExtensions
     public static T OnKey<T>(this T control, string gesture, Action action, bool handled = true, bool tunnel = false)
         where T : Control
     {
-        var keyGesture = KeyGesture.Parse(gesture);
+        // Try parsing as gesture first
+        KeyGesture? keyGesture = null;
+        try { keyGesture = KeyGesture.Parse(gesture); } catch { }
 
         void Handler(object? sender, KeyEventArgs e)
         {
-            if (keyGesture.Matches(e))
+            bool match = false;
+            if (keyGesture != null)
+            {
+                match = keyGesture.Matches(e);
+            }
+            else
+            {
+                // Fallback for simple key names (e.g. "A", "1")
+                if (Enum.TryParse<Key>(gesture, true, out var key))
+                {
+                    match = e.Key == key;
+                }
+            }
+
+            if (match)
+            {
+                action();
+                if (handled) e.Handled = true;
+            }
+        }
+
+        if (tunnel)
+            control.AddHandler(InputElement.KeyDownEvent, Handler, RoutingStrategies.Tunnel);
+        else
+            control.KeyDown += Handler;
+
+        return control;
+    }
+
+    /// <summary>
+    /// Binds a specific key to an action.
+    /// </summary>
+    public static T OnKey<T>(this T control, Key key, Action action, bool handled = true, bool tunnel = false)
+        where T : Control
+    {
+        void Handler(object? sender, KeyEventArgs e)
+        {
+            if (e.Key == key)
             {
                 action();
                 if (handled) e.Handled = true;

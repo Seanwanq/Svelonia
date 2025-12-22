@@ -60,11 +60,33 @@ new TextBlock()
 new Button().Dock(Dock.Left)
 ```
 
-## Hover & Pressed States
-Many property extensions support `hover` and `pressed` arguments for simple state-based styling without complex templates.
+## State-Based Styling (Hover, Pressed, Focus)
+Many property extensions support `hover`, `pressed`, and `focus` arguments for simple state-based styling without creating complex XAML templates.
 
 ```csharp
 new Button()
     .Background(Tw.Blue500, hover: Tw.Blue600, pressed: Tw.Blue700)
+    .Foreground(Tw.White, disabled: Tw.Gray400)
 ```
-*(Note: Support for this feature depends on the specific control and generated extension availability)*
+
+### Borders
+You can style borders concisely using the `.Border()` shorthand or individual extensions.
+
+```csharp
+new TextBox()
+    // Shorthand: Brush, Thickness, FocusBrush
+    .Border(Tw.Slate300, 1, focusBrush: Tw.Blue500)
+    .CornerRadius(4);
+```
+
+### Deep Styling for Complex Controls
+Svelonia.Fluent automatically "drills down" into the template of certain complex controls to apply styles correctly.
+
+*   **TextBox**: Styles like `BorderBrush` or `Background` applied with state (e.g., `focus`) will target the internal `PART_Border`. This ensures your focus styles work as expected even if the default theme uses TemplateBindings.
+*   **CheckBox**: Styles target the internal `NormalRectangle` (the actual box), allowing you to change the check box color without affecting the text background.
+
+```csharp
+// The background color changes only for the box itself on hover
+new CheckBox()
+    .Background(Tw.White, hover: Tw.Slate100)
+```

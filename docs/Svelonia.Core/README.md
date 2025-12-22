@@ -10,6 +10,26 @@ The `Svelonia.Core` library provides the fundamental building blocks for Sveloni
 *   **Components**: The base unit of composition, extending Avalonia's `UserControl` with lifecycle management.
 *   **Functional Controls**: Logic-as-UI components like `IfControl` and `AwaitControl`.
 
+## Application Setup
+
+Svelonia provides extensions to simplify the `App.axaml.cs` initialization logic.
+
+### Loading Styles
+Instead of imperative static calls, you can use the fluent `LoadStyles` method in your `Initialize` override:
+
+```csharp
+public override void Initialize()
+{
+    Styles.Add(new FluentTheme());
+    
+    // Load your Svelonia styles fluently
+    this.LoadStyles(
+        Test3.Styles.Styles.Load,
+        Test3.Styles.Transitions.Load
+    );
+}
+```
+
 ## Table of Contents
 
 1.  **[State Management](./State.md)**

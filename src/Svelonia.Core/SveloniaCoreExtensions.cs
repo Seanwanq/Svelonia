@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,6 +25,18 @@ public static class SveloniaCoreExtensions
     {
         services.AddSveloniaCore();
         return services;
+    }
+
+    /// <summary>
+    /// Fluently load styles into the application
+    /// </summary>
+    public static Application LoadStyles(this Application app, params Action<Application>[] loaders)
+    {
+        foreach (var loader in loaders)
+        {
+            loader(app);
+        }
+        return app;
     }
 
     /// <summary>

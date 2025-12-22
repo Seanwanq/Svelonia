@@ -38,11 +38,14 @@ public static class ControlStyleExtensions
     /// <summary>
     /// Multi-state property setter helper
     /// </summary>
-    public static T SetStateProperty<T>(this T control, AvaloniaProperty prop, object normal, object? hover = null, object? pressed = null, object? disabled = null) where T : Control
+    public static T SetStateProperty<T>(this T control, AvaloniaProperty prop, object normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
     {
         // For Button, we ONLY drill down for specific visual properties that are overridden by the theme template
         bool isButton = control is Button;
-        bool needsDrillDown = isButton && (
+        bool isTextBox = control is TextBox;
+        bool isCheckBox = control is CheckBox;
+        
+        bool needsDrillDown = (isButton || isTextBox || isCheckBox) && (
             prop == TemplatedControl.BackgroundProperty ||
             prop == TemplatedControl.ForegroundProperty ||
             prop == TemplatedControl.BorderBrushProperty ||
@@ -52,7 +55,11 @@ public static class ControlStyleExtensions
         );
 
         Func<Selector?, Selector> target = needsDrillDown
-            ? x => x.OfType<T>().Template().OfType<ContentPresenter>()
+            ? (isButton 
+                ? x => x.OfType<T>().Template().OfType<ContentPresenter>()
+                : (isTextBox 
+                    ? x => x.OfType<T>().Template().Name("PART_Border")
+                    : x => x.OfType<T>().Template().Name("NormalRectangle")))
             : x => x.OfType<T>();
 
         // Normal
@@ -64,21 +71,52 @@ public static class ControlStyleExtensions
         // Hover
         if (hover != null)
             control.AddFluentStyle(
-                x => needsDrillDown ? x.OfType<T>().IsPointerOver().Template().OfType<ContentPresenter>() : x.OfType<T>().IsPointerOver(),
+                x => needsDrillDown 
+                    ? (isButton 
+                        ? x.OfType<T>().IsPointerOver().Template().OfType<ContentPresenter>() 
+                        : (isTextBox
+                            ? x.OfType<T>().IsPointerOver().Template().Name("PART_Border")
+                            : x.OfType<T>().IsPointerOver().Template().Name("NormalRectangle")))
+                    : x.OfType<T>().IsPointerOver(),
                 s => s.Setters.Add(new Setter(prop, hover))
             );
 
         // Pressed
         if (pressed != null)
             control.AddFluentStyle(
-                x => needsDrillDown ? x.OfType<T>().IsPressed().Template().OfType<ContentPresenter>() : x.OfType<T>().IsPressed(),
+                x => needsDrillDown 
+                    ? (isButton 
+                        ? x.OfType<T>().IsPressed().Template().OfType<ContentPresenter>() 
+                        : (isTextBox
+                            ? x.OfType<T>().IsPressed().Template().Name("PART_Border")
+                            : x.OfType<T>().IsPressed().Template().Name("NormalRectangle")))
+                    : x.OfType<T>().IsPressed(),
                 s => s.Setters.Add(new Setter(prop, pressed))
+            );
+
+        // Focus
+        if (focus != null)
+            control.AddFluentStyle(
+                x => needsDrillDown 
+                    ? (isButton 
+                        ? x.OfType<T>().IsFocused().Template().OfType<ContentPresenter>() 
+                        : (isTextBox
+                            ? x.OfType<T>().IsFocused().Template().Name("PART_Border")
+                            : x.OfType<T>().IsFocused().Template().Name("NormalRectangle")))
+                    : x.OfType<T>().IsFocused(),
+                s => s.Setters.Add(new Setter(prop, focus))
             );
 
         // Disabled
         if (disabled != null)
             control.AddFluentStyle(
-                x => needsDrillDown ? x.OfType<T>().IsDisabled().Template().OfType<ContentPresenter>() : x.OfType<T>().IsDisabled(),
+                x => needsDrillDown 
+                    ? (isButton 
+                        ? x.OfType<T>().IsDisabled().Template().OfType<ContentPresenter>() 
+                        : (isTextBox
+                            ? x.OfType<T>().IsDisabled().Template().Name("PART_Border")
+                            : x.OfType<T>().IsDisabled().Template().Name("NormalRectangle")))
+                    : x.OfType<T>().IsDisabled(),
                 s => s.Setters.Add(new Setter(prop, disabled))
             );
 
@@ -88,22 +126,22 @@ public static class ControlStyleExtensions
     /// <summary>
     /// Multi-state Background
     /// </summary>
-    public static T Background<T>(this T control, object normal, object? hover = null, object? pressed = null, object? disabled = null) where T : Control
+    public static T Background<T>(this T control, object normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
     {
         var prop = control is Panel ? Panel.BackgroundProperty : 
-                   control is Border ? Border.BackgroundProperty :
+                   control is Avalonia.Controls.Border ? Avalonia.Controls.Border.BackgroundProperty :
                    control is TemplatedControl ? TemplatedControl.BackgroundProperty :
                    control is ContentPresenter ? ContentPresenter.BackgroundProperty :
                    null;
 
         if (prop == null) return control;
-        return control.SetStateProperty(prop, normal, hover, pressed, disabled);
+        return control.SetStateProperty(prop, normal, hover, pressed, disabled, focus);
     }
 
     /// <summary>
     /// Multi-state Foreground
     /// </summary>
-    public static T Foreground<T>(this T control, object normal, object? hover = null, object? pressed = null, object? disabled = null) where T : Control
+    public static T Foreground<T>(this T control, object normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
     {
         var prop = control is TemplatedControl ? TemplatedControl.ForegroundProperty :
                    control is TextBlock ? TextBlock.ForegroundProperty :
@@ -111,13 +149,13 @@ public static class ControlStyleExtensions
                    null;
 
         if (prop == null) return control;
-        return control.SetStateProperty(prop, normal, hover, pressed, disabled);
+        return control.SetStateProperty(prop, normal, hover, pressed, disabled, focus);
     }
 
     /// <summary>
     /// Multi-state Padding
     /// </summary>
-    public static T Padding<T>(this T control, object normal, object? hover = null, object? pressed = null, object? disabled = null) where T : Control
+    public static T Padding<T>(this T control, object normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
     {
         var prop = control is TemplatedControl ? TemplatedControl.PaddingProperty :
                    control is Decorator ? Decorator.PaddingProperty :
@@ -125,41 +163,73 @@ public static class ControlStyleExtensions
                    null;
 
         if (prop == null) return control;
-        return control.SetStateProperty(prop, normal, hover, pressed, disabled);
+        return control.SetStateProperty(prop, normal, hover, pressed, disabled, focus);
     }
 
     /// <summary>
     /// Multi-state BorderThickness
     /// </summary>
-    public static T BorderThickness<T>(this T control, object normal, object? hover = null, object? pressed = null, object? disabled = null) where T : Control
+    public static T BorderThickness<T>(this T control, object normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
     {
         var prop = control is TemplatedControl ? TemplatedControl.BorderThicknessProperty :
-                   control is Border ? Border.BorderThicknessProperty :
+                   control is Avalonia.Controls.Border ? Avalonia.Controls.Border.BorderThicknessProperty :
                    null;
 
         if (prop == null) return control;
-        return control.SetStateProperty(prop, normal, hover, pressed, disabled);
+        return control.SetStateProperty(prop, normal, hover, pressed, disabled, focus);
+    }
+
+    /// <summary>
+    /// Multi-state BorderBrush
+    /// </summary>
+    public static T BorderBrush<T>(this T control, object normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
+    {
+        var prop = control is TemplatedControl ? TemplatedControl.BorderBrushProperty :
+                   control is Avalonia.Controls.Border ? Avalonia.Controls.Border.BorderBrushProperty :
+                   null;
+
+        if (prop == null) return control;
+        return control.SetStateProperty(prop, normal, hover, pressed, disabled, focus);
+    }
+
+    /// <summary>
+    /// Shorthand for BorderBrush and BorderThickness
+    /// </summary>
+    public static T Border<T>(this T control, object brush, double thickness = 1.0, object? focusBrush = null) where T : Control
+    {
+        control.BorderBrush(brush, focus: focusBrush);
+        control.BorderThickness(thickness);
+        return control;
     }
 
     /// <summary>
     /// Multi-state CornerRadius
     /// </summary>
-    public static T CornerRadius<T>(this T control, object normal, object? hover = null, object? pressed = null, object? disabled = null) where T : Control
+    public static T CornerRadius<T>(this T control, object normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
     {
         var prop = control is TemplatedControl ? TemplatedControl.CornerRadiusProperty :
-                   control is Border ? Border.CornerRadiusProperty :
+                   control is Avalonia.Controls.Border ? Avalonia.Controls.Border.CornerRadiusProperty :
                    null;
 
         if (prop == null) return control;
-        return control.SetStateProperty(prop, normal, hover, pressed, disabled);
+        return control.SetStateProperty(prop, normal, hover, pressed, disabled, focus);
+    }
+
+    /// <summary>
+    /// Set if the control can receive focus
+    /// </summary>
+    public static T Focusable<T>(this T control, bool focusable = true) where T : Control
+    {
+        control.Focusable = focusable;
+        return control;
     }
 
     public static T OnHover<T>(this T control, Action<Style> configure) where T : Control
-        => control.AddFluentStyle(x => x.IsPointerOver(), configure);
+        => control.AddFluentStyle(x => x!.IsPointerOver(), configure);
 
     public static T OnPressed<T>(this T control, Action<Style> configure) where T : Control
-        => control.AddFluentStyle(x => x.IsPressed(), configure);
+        => control.AddFluentStyle(x => x!.IsPressed(), configure);
 
     public static T OnDisabled<T>(this T control, Action<Style> configure) where T : Control
-        => control.AddFluentStyle(x => x.IsDisabled(), configure);
+        => control.AddFluentStyle(x => x!.IsDisabled(), configure);
 }
