@@ -66,7 +66,7 @@ public class MainLayout : Layout
 ```
 
 ### Using Layouts
-(See `Svelonia.Gen` documentation for automatic layout application via folder structure).
+(See [Routing Documentation](../Svelonia.Kit/Routing.md) for automatic layout application via folder structure).
 
 Manual usage:
 ```csharp

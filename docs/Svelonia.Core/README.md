@@ -46,3 +46,12 @@ public override void Initialize()
 
 5.  **[Attributes](./Attributes.md)**
     Metadata attributes like `[Parameter]` and `[KeepAlive]` for configuring component behavior.
+
+6.  **[Theming System](./Theming.md)**
+    A JSON-based theme engine with auto-type conversion and hot-swapping support.
+
+7.  **[Services](./Services.md)**
+    Core abstractions like `IDialogService`.
+
+8.  **[Debugging & Hot Reload](./Debugging.md)**
+    Tools for monitoring state changes and hooking into the Hot Reload pipeline.

@@ -24,3 +24,6 @@
 
 4.  **[Responsive Design](./Responsive.md)**
     Built-in tools for building adaptive UIs that work across different screen sizes and platforms.
+
+5.  **[Advanced Topics](./Advanced.md)**
+    Learn how to extend Svelonia to support third-party control libraries and custom components.
