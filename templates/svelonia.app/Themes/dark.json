@@ -1,0 +1,18 @@
+{
+  "PrimaryColor": "linear-gradient(#8b5cf6, #6d28d9)",
+  "BackgroundColor": "#121212",
+  "SurfaceColor": "#1e1e1e",
+  "TextColor": "#e0e0e0",
+  "BorderColor": "#333333",
+
+  "PaperBg": "#1e1e1e",
+  "PaperShadow": "0 10 30 #80000000",
+
+  "SmallRadius": 10,
+  "MediumPadding": 16,
+  "SmallPadding": 8,
+  "BorderWidth": 1,
+
+  "ButtonShadow": "0 2 10 #ff000000",
+  "ButtonShadowPressed": "0 1 2 #ff000000"
+}
