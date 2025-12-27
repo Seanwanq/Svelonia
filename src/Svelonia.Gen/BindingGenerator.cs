@@ -31,6 +31,7 @@ public class BindingGenerator : IIncrementalGenerator
         sb.AppendLine("using Svelonia.Core;");
         sb.AppendLine("using Svelonia.Fluent;");
         sb.AppendLine("using System.Collections.Generic;");
+        sb.AppendLine("using System.Linq;");
         sb.AppendLine();
         sb.AppendLine("namespace Svelonia.Generated");
         sb.AppendLine("{");
