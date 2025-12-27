@@ -8,6 +8,7 @@ Svelonia includes a lightweight, JSON-based theming engine (`SveloniaTheme`) des
 
 - **JSON Format**: Define your design tokens (colors, spacing, radius) in standard JSON.
 - **Auto-Conversion**: Automatically converts hex strings to `SolidColorBrush`, and numbers to `Thickness` or `CornerRadius` based on key names.
+- **Advanced Visuals**: Supports CSS-like `linear-gradient` and `BoxShadow` definitions directly in JSON.
 - **Hot Swapping**: Switch between Light/Dark themes instantly using `State<T>`.
 
 ## Defining a Theme
@@ -16,17 +17,21 @@ Create a JSON file (e.g., `light.json`):
 
 ```json
 {
-  "PrimaryColor": "#3b82f6",
-  "BackgroundColor": "#ffffff",
-  "TextColor": "#1f2937",
+  "PrimaryColor": "linear-gradient(#a78bfa, #7c3aed)",
+  "BackgroundColor": "#f0f0f0",
+  "TextColor": "#333333",
   
-  "SmallRadius": 4, 
+  "SmallRadius": 10, 
   "MediumPadding": 16,
-  "BorderWidth": 1
+  
+  "PaperShadow": "0 10 20 #20000000",
+  "ButtonShadow": "0 2 4 #40000000"
 }
 ```
 
-*   **Colors**: Strings starting with `#` are parsed as colors.
+*   **Colors**: Strings starting with `#` are parsed as `SolidColorBrush`.
+*   **Gradients**: Use `linear-gradient(#color1, #color2)` to create vertical linear gradients.
+*   **Box Shadows**: Use the format `"OffsetX OffsetY Blur [Spread] #Color"`. Keys must contain the word **"Shadow"**.
 *   **Thickness/Radius**: Numbers assigned to keys containing "Radius", "Padding", "Margin", or "Thickness" are automatically converted to their respective Avalonia types.
 
 ## Setup in App.cs

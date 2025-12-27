@@ -19,27 +19,23 @@ new Rectangle()
 ## Text Binding
 
 ### TextBlock (One-Way)
-Use `.BindTextContent(...)` or simply pass a `State<string>` to `.Text(...)`.
 
 ```csharp
-State<string> message = new("Hello");
-
-// Option A: Generated Extension
-new TextBlock().Text(message);
-
-// Option B: Explicit Helper (useful for Computed conversions)
-new TextBlock().BindTextContent(message);
+new TextBlock().BindTextContent(myState);
 ```
 
-### TextBox (Two-Way)
-For input controls, use `.BindText(...)` to enable two-way data binding.
+## TextBox (Two-Way)
+
+For input controls like `TextBox`, use `.BindText` to enable two-way binding. Changes in the UI update the State, and changes in the State update the UI.
 
 ```csharp
-State<string> username = new("");
+var name = new State<string>("Alice");
 
 new TextBox()
-    .BindText(username); // Typing updates 'username.Value'
+    .BindText(name); // Two-way
 ```
+
+## Styling Bindings
 
 ## Content Binding
 

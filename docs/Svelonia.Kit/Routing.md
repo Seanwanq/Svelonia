@@ -6,15 +6,27 @@ The `Router` is responsible for managing the application's URL state and decidin
 
 ## Basics
 
-The `Router` is typically a singleton registered in your DI container.
+The `Router` handles navigation. It must be instantiated and passed to the `NavigationHost`, which renders the current view.
 
 ```csharp
 // App.cs
-public static Router Router { get; } = new();
-
-// Navigation
-Router.Navigate("/home");
-Router.Navigate("/users/123");
+public override void OnFrameworkInitializationCompleted()
+{
+    if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        var router = new Router();
+        
+        // NavigationHost is a UserControl, so wrap it in a Window
+        desktop.MainWindow = new Window 
+        { 
+            Content = new NavigationHost(router) 
+        };
+        
+        // Initial navigation
+        router.Navigate("/");
+    }
+    base.OnFrameworkInitializationCompleted();
+}
 ```
 
 ## Route Registration
@@ -118,4 +130,59 @@ Router.Navigate("/search?q=svelonia&limit=5");
 new Button()
     .Content("Next Page")
     .OnClick(_ => Router.Navigate($"/search?q={Query}&limit={Limit}&page=2"));
+```
+
+## Page Lifecycle
+
+Svelonia Pages have a deterministic lifecycle, even when using caching (`KeepAlive`).
+
+- **OnLoadAsync**: Guaranteed to be called **every time** a page is navigated to, even if the page instance is being reused from cache. This is the ideal place to synchronize parameters with your application state.
+- **CanLeaveAsync**: Called before the page is removed from view. Return `false` to cancel navigation.
+
+### Example Lifecycle Flow
+
+```csharp
+public override async Task OnLoadAsync(RouteParams p)
+{
+    // This runs every time you click a link to this page,
+    // regardless of whether the component was just created or cached.
+    var id = p["id"];
+    await LoadData(id);
+}
+```
+
+---
+
+## Navigation Guards
+
+You can intercept navigation to prevent users from losing unsaved changes or accessing restricted areas.
+
+### Page-Level Guard
+
+Override `CanLeaveAsync` in your `Page` class. This is the preferred way to handle "Unsaved Changes" scenarios.
+
+```csharp
+public override async Task<bool> CanLeaveAsync()
+{
+    if (IsDirty)
+    {
+        return await ShowConfirmDialog("Discard changes?");
+    }
+    return true;
+}
+```
+
+### Global Guard
+
+Use `Router.AddGuard` to intercept *all* navigation attempts.
+
+```csharp
+router.AddGuard(async (path) => 
+{
+    if (path.StartsWith("/admin") && !User.IsAdmin)
+    {
+        return false; // Cancel navigation
+    }
+    return true;
+});
 ```

@@ -46,15 +46,19 @@ Simplifies handling asynchronous tasks in the UI, managing Loading, Success, and
 ```csharp
 Task<UserProfile> LoadProfile() => apiClient.GetUserAsync();
 
-var view = new AwaitControl<UserProfile>(
-    task: LoadProfile(),
+// Use a factory lambda to allow reloading
+var loader = new AwaitControl<UserProfile>(
+    taskFactory: () => LoadProfile(),
     loading: () => new TextBlock().Text("Loading..."),
     then: (user) => new ProfileCard(user),
-    error: (ex) => new TextBlock().Text($"Error: {ex.Message}").Foreground(Brushes.Red)
+    error: (ex) => new TextBlock().Text($"Error: {ex.Message}")
 );
+
+// Trigger a refresh later
+loader.Reload();
 ```
 
-*   **task**: The `Task<T>` to await.
+*   **taskFactory**: A function that returns a `Task<T>`. This is called immediately and whenever `Reload()` is called.
 *   **loading**: (Optional) View to show while the task is running.
-*   **then**: Function to build the Success view using the result of the task.
-*   **error**: (Optional) Function to build the Error view if the task throws an exception.
+*   **then**: Function to build the Success view using the result.
+*   **error**: (Optional) Function to build the Error view.

@@ -68,13 +68,22 @@ new Button().Content(
 
 ## Event Handling
 
-Common events have fluent wrappers, most notably `.OnClick(...)` for buttons.
+Common events have fluent wrappers.
+
+### Universal OnClick
+
+You can add a click handler to **any** control (Button, Border, Image, etc.).
 
 ```csharp
-new Button()
-    .Content("Save")
+// Standard Button
+new Button().Content("Save").OnClick(() => Console.WriteLine("Saved"));
+
+// Interactive Card (Border)
+new Border()
+    .Background(Brushes.White)
     .OnClick(e => 
     {
-        Console.WriteLine("Button Clicked!");
-    })
+        // 'e' is RoutedEventArgs
+        Console.WriteLine("Card Clicked!");
+    });
 ```

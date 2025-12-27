@@ -1,41 +1,62 @@
 [← Back to Svelonia.Kit](./README.md)
 
-# Pages & Hosting
+# Pages
 
-## Page
+`Page` is a specialized `Component` that serves as a route target.
 
-The `Page` class extends `Svelonia.Core.Component` and adds routing-specific lifecycle methods.
+## Definition
 
-### OnLoadAsync
-
-This method is called immediately after the page is instantiated but before it is fully displayed. It is the ideal place to fetch initial data based on route parameters.
+Inherit from `Svelonia.Kit.Page`.
 
 ```csharp
-public class ProductPage : Page
-{
-    private State<Product?> _product = new(null);
+using Svelonia.Kit;
 
-    public override async Task OnLoadAsync(RouteParams p)
+public class HomePage : Page
+{
+    public HomePage()
     {
-        var id = p["id"];
-        _product.Value = await Api.GetProduct(id);
+        Title = "Home";
+        Content = new TextBlock().Text("Welcome!");
     }
 }
 ```
 
-### Lifecycle
-1.  **Constructor**: Initialize UI structure (skeleton).
-2.  **OnLoadAsync**: Fetch data.
-3.  **AttachedToVisualTree**: Component is on screen.
-4.  **DetachedFromVisualTree**: Component is removed (Disposed if not KeepAlive).
+## Properties
 
-## NavigationHost
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `Title` | `string` | The title of the page. Can be used by layouts to update the window title. |
 
-The `NavigationHost` is the UI control that acts as the placeholder for the current page. It observes the `Router.CurrentView` state.
+## Lifecycle
+
+### OnLoadAsync
+
+Called when the route parameters are ready. This is where you should fetch data.
 
 ```csharp
-// In your MainWindow or MainLayout
-Content = new NavigationHost(App.Router);
+public override async Task OnLoadAsync(RouteParams p)
+{
+    if (p.TryGetValue("id", out var id))
+    {
+        // Load data
+    }
+}
 ```
 
-It automatically handles switching views when navigation occurs.
+### CanLeaveAsync
+
+Called before the router navigates away from this page. Return `false` to cancel navigation (e.g., if there are unsaved changes).
+
+```csharp
+public override async Task<bool> CanLeaveAsync()
+{
+    if (HasUnsavedChanges)
+    {
+        // Show confirmation dialog...
+        return await ConfirmDiscardAsync();
+    }
+    return true;
+}
+```
+
+*(See `Component` documentation for standard lifecycle methods like `OnAttachedToVisualTree`)*
