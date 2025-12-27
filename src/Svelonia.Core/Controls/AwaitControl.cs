@@ -9,31 +9,56 @@ namespace Svelonia.Core.Controls;
 /// <typeparam name="T"></typeparam>
 public class AwaitControl<T> : UserControl
 {
+    private readonly Func<Task<T>> _taskFactory;
+    private readonly Func<Control>? _loading;
+    private readonly Func<T, Control> _then;
+    private readonly Func<Exception, Control>? _error;
+
     /// <summary>
-    /// 
+    /// Creates an AwaitControl with a task factory, allowing for reloads.
     /// </summary>
-    /// <param name="task"></param>
-    /// <param name="loading"></param>
-    /// <param name="then"></param>
-    /// <param name="error"></param>
     public AwaitControl(
-        Task<T> task,
+        Func<Task<T>> taskFactory,
         Func<Control>? loading,
         Func<T, Control> then,
         Func<Exception, Control>? error)
     {
+        _taskFactory = taskFactory;
+        _loading = loading;
+        _then = then;
+        _error = error;
+
+        Reload();
+    }
+
+    /// <summary>
+    /// Compatibility constructor for a single-shot task.
+    /// </summary>
+    public AwaitControl(
+        Task<T> task,
+        Func<Control>? loading,
+        Func<T, Control> then,
+        Func<Exception, Control>? error) 
+        : this(() => task, loading, then, error)
+    {
+    }
+
+    /// <summary>
+    /// Re-executes the task and refreshes the view.
+    /// </summary>
+    public void Reload()
+    {
         // 1. Show Loading immediately
-        if (loading != null)
+        if (_loading != null)
         {
-            Content = loading();
+            Content = _loading();
         }
 
         // 2. Run Task safely
-        // We don't await in constructor, we fire and forget but handle context
-        RunTask(task, then, error);
+        RunTask(_taskFactory());
     }
 
-    private async void RunTask(Task<T> task, Func<T, Control> then, Func<Exception, Control>? error)
+    private async void RunTask(Task<T> task)
     {
         try
         {
@@ -42,7 +67,7 @@ public class AwaitControl<T> : UserControl
             // Switch to Success View
             Dispatcher.UIThread.Invoke(() =>
             {
-                Content = then(result);
+                Content = _then(result);
             });
         }
         catch (Exception ex)
@@ -50,9 +75,9 @@ public class AwaitControl<T> : UserControl
             // Switch to Error View
             Dispatcher.UIThread.Invoke(() =>
             {
-                if (error != null)
+                if (_error != null)
                 {
-                    Content = error(ex);
+                    Content = _error(ex);
                 }
                 else
                 {

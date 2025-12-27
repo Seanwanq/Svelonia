@@ -81,17 +81,58 @@ public class Router
     /// <param name="fullPath"></param>
     public async void Navigate(string fullPath)
     {
+        Console.WriteLine($"[Router] Request Navigate: {fullPath}");
+
+        // 0. Run Page-level Guards
+        var activePage = GetActivePage(CurrentView.Value as Component);
+        if (activePage != null)
+        {
+            if (!await activePage.CanLeaveAsync()) 
+            {
+                Console.WriteLine("[Router] Page Guard prevented navigation.");
+                return;
+            }
+        }
+
+        string oldBasePath = _currentPath.Split('?')[0];
         _currentPath = fullPath;
 
-        // 1. Run Guards
+        // 1. Run Global Guards
         foreach (var guard in _guards)
         {
-            if (!await guard(fullPath)) return; // Guard cancelled navigation
+            if (!await guard(fullPath)) 
+            {
+                Console.WriteLine("[Router] Global Guard prevented navigation.");
+                return; 
+            }
+        }
+
+        Console.WriteLine("[Router] Guards passed.");
+
+        // Parse Params early for OnLoadAsync
+        var p = new RouteParams();
+        var parts = fullPath.Split('?');
+        var path = parts[0];
+        var query = parts.Length > 1 ? parts[1] : "";
+        if (!string.IsNullOrEmpty(query))
+        {
+            var qParts = query.Split('&');
+            foreach (var qp in qParts)
+            {
+                var kv = qp.Split('=');
+                if (kv.Length == 2) p[kv[0]] = Uri.UnescapeDataString(kv[1]);
+            }
         }
 
         // 2. Check Cache
         if (_cache.TryGetValue(fullPath, out var cachedComponent))
         {
+            Console.WriteLine("[Router] Cache hit.");
+            var cachedPage = GetActivePage(cachedComponent);
+            if (cachedPage != null)
+            {
+                await cachedPage.OnLoadAsync(p);
+            }
             CurrentView.Value = cachedComponent;
             return;
         }
@@ -99,61 +140,75 @@ public class Router
         IsLoading.Value = true;
         try
         {
-            // 3. Parse Query Params
-            var parts = fullPath.Split('?');
-            var path = parts[0];
-            var query = parts.Length > 1 ? parts[1] : "";
-
             foreach (var route in _routes)
             {
                 var match = route.Regex.Match(path);
                 if (match.Success)
                 {
-                    var p = new RouteParams();
-
-                    // Route Params (/user/{id})
+                    // Extract Route Params
                     foreach (Group group in match.Groups)
                     {
-                        if (!int.TryParse(group.Name, out _))
+                        if (!int.TryParse(group.Name, out _)) p[group.Name] = group.Value;
+                    }
+
+                    // Create or Reuse Component
+                    Component? component = null;
+                    bool isSameRoute = (path == oldBasePath); 
+
+                    if (isSameRoute && CurrentView.Value is Component currentComp && route.KeepAlive)
+                    {
+                        Console.WriteLine($"[Router] In-place update for {currentComp.GetType().Name}");
+                        component = currentComp;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[Router] Creating new component via factory.");
+                        component = await route.Factory(p);
+                        if (route.KeepAlive) _cache[fullPath] = component;
+                    }
+
+                    // 4. Update Parameters and Load
+                    var targetPage = GetActivePage(component);
+                    if (targetPage != null)
+                    {
+                        Console.WriteLine($"[Router] Calling OnLoadAsync on {targetPage.GetType().Name}.");
+                        try 
                         {
-                            p[group.Name] = group.Value;
+                            await targetPage.OnLoadAsync(p);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[Router] Error in OnLoadAsync for {targetPage.GetType().Name}: {ex.Message}");
                         }
                     }
 
-                    // Query Params (?sort=asc)
-                    if (!string.IsNullOrEmpty(query))
+                    if (CurrentView.Value != component)
                     {
-                        var qParts = query.Split('&');
-                        foreach (var qp in qParts)
-                        {
-                            var kv = qp.Split('=');
-                            if (kv.Length == 2)
-                            {
-                                p[kv[0]] = Uri.UnescapeDataString(kv[1]);
-                            }
-                        }
+                        Console.WriteLine("[Router] Switching View.");
+                        CurrentView.Value = component;
                     }
-
-                    // Create Component
-                    var component = await route.Factory(p);
-
-                    // 4. Cache if keepAlive
-                    if (route.KeepAlive)
-                    {
-                        _cache[fullPath] = component;
-                    }
-
-                    CurrentView.Value = component;
                     return;
                 }
             }
 
             CurrentView.Value = new TextBlock { Text = $"404 Not Found: {fullPath}" };
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Router] Critical Navigation Error: {ex.Message}");
+            CurrentView.Value = new TextBlock { Text = $"Navigation Error: {ex.Message}", Foreground = Brushes.Red };
+        }
         finally
         {
             IsLoading.Value = false;
         }
+    }
+
+    private Page? GetActivePage(Component? component)
+    {
+        if (component is Page p) return p;
+        if (component is Layout l && l.Slot is Component c) return GetActivePage(c);
+        return null;
     }
 
     private class RouteEntry

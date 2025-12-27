@@ -10,7 +10,7 @@ public abstract class Layout : Component
     /// <summary>
     /// 
     /// </summary>
-    protected Control Slot { get; }
+    public Control Slot { get; }
 
     /// <summary>
     /// 

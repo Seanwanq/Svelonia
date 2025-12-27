@@ -17,13 +17,23 @@ public static class Binder
     /// <param name="control"></param>
     /// <param name="prop"></param>
     /// <param name="state"></param>
-    public static void Bind<TControl, TValue>(TControl control, AvaloniaProperty<TValue> prop, State<TValue> state)
+    public static void Bind<TControl, TValue>(TControl control, AvaloniaProperty prop, State<TValue> state)
         where TControl : AvaloniaObject
     {
-        void Handler(TValue val) => control.SetValue(prop, val);
+        void Handler(TValue val)
+        {
+            if (val is Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension dr)
+            {
+                control.Bind(prop, dr);
+            }
+            else
+            {
+                control.SetValue(prop, val);
+            }
+        }
 
         // Initial set
-        control.SetValue(prop, state.Value);
+        Handler(state.Value);
 
         // Lifecycle management
         if (control is Control c)

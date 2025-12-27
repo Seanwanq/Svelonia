@@ -7,10 +7,9 @@ namespace Svelonia.Core;
 /// <summary>
 /// 
 /// </summary>
-public static partial class Svelonia
+public static partial class Sve
 {
     private static IServiceProvider? _serviceProvider;
-
     /// <summary>
     /// 
     /// </summary>
@@ -35,12 +34,13 @@ public static partial class Svelonia
     /// </summary>
     /// <param name="condition"></param>
     /// <param name="builder"></param>
+    /// <param name="elseBuilder"></param>
     /// <param name="animate"></param>
     /// <param name="transition"></param>
     /// <returns></returns>
-    public static Control If(State<bool> condition, Func<Control> builder, bool animate = false, Animation.SveloniaTransition? transition = null)
+    public static Control If(State<bool> condition, Func<Control> builder, Func<Control>? elseBuilder = null, bool animate = false, Animation.SveloniaTransition? transition = null)
     {
-        return new IfControl(condition, builder, animate, transition);
+        return new IfControl(condition, builder, elseBuilder, animate, transition);
     }
 
     /// <summary>
@@ -75,5 +75,13 @@ public static partial class Svelonia
         Func<Exception, Control>? error = null)
     {
         return new AwaitControl<T>(task, loading, then, error);
+    }
+
+    /// <summary>
+    /// Creates a Dynamic Resource extension for use in fluent bindings.
+    /// </summary>
+    public static Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension Res(string key)
+    {
+        return new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension(key);
     }
 }

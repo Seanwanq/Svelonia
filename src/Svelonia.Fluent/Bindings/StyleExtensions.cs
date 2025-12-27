@@ -36,15 +36,21 @@ public static class StyleExtensions
     private static void Bind<TControl, TValue>(TControl control, AvaloniaProperty prop, State<TValue> state)
         where TControl : AvaloniaObject
     {
-        void Handler(TValue val) => control.SetValue(prop, val);
+        void Handler(TValue val)
+        {
+            if (val is Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension dr)
+                control.Bind(prop, dr);
+            else
+                control.SetValue(prop, val);
+        }
 
-        control.SetValue(prop, state.Value);
+        Handler(state.Value);
 
         if (control is Control c)
         {
             c.AttachedToVisualTree += (s, e) =>
             {
-                control.SetValue(prop, state.Value);
+                Handler(state.Value);
                 state.OnChange += Handler;
             };
             c.DetachedFromVisualTree += (s, e) =>

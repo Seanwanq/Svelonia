@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Svelonia.Fluent;
 using Svelonia.Generated;
 
 namespace Svelonia.DevTools;
@@ -29,7 +30,7 @@ public class DevToolsWindow : Window
 
                 // Log List
                 new ScrollViewer().Content(
-                    Core.Svelonia.Each(DevToolsContext.Instance.Logs, log =>
+                    Core.Sve.Each(DevToolsContext.Instance.Logs, log =>
                         new Border()
                             .BorderThickness(0, 0, 0, 1)
                             .BorderBrush(Brushes.LightGray)

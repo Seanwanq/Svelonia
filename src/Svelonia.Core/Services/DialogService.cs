@@ -84,15 +84,16 @@ public class DialogService : IDialogService
     /// </summary>
     /// <param name="title"></param>
     /// <param name="message"></param>
-    /// <param name="yesText"></param>
-    /// <param name="noText"></param>
+    /// <param name="okText"></param>
+    /// <param name="cancelText"></param>
+    /// <param name="altText"></param>
     /// <returns></returns>
-    public async Task<bool> ShowConfirmAsync(string title, string message, string yesText = "Yes", string noText = "No")
+    public async Task<DialogResult> ShowConfirmAsync(string title, string message, string okText = "Yes", string cancelText = "No", string? altText = null)
     {
         var owner = GetOwner();
-        if (owner == null) return false;
+        if (owner == null) return DialogResult.None;
 
-        var result = false;
+        var result = DialogResult.None;
         var window = new Window
         {
             Title = title,
@@ -103,11 +104,32 @@ public class DialogService : IDialogService
             SystemDecorations = SystemDecorations.BorderOnly
         };
 
-        var noButton = new Button { Content = noText };
-        noButton.Click += (_, _) => { result = false; window.Close(); };
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 10,
+            HorizontalAlignment = HorizontalAlignment.Right
+        };
 
-        var yesButton = new Button { Content = yesText };
-        yesButton.Click += (_, _) => { result = true; window.Close(); };
+        // Helper to create button
+        Button CreateBtn(string text, DialogResult res, bool isDefault = false, bool isCancel = false)
+        {
+            var btn = new Button { Content = text, IsDefault = isDefault, IsCancel = isCancel };
+            btn.Click += (_, _) => { result = res; window.Close(); };
+            return btn;
+        }
+
+        // 3. Alt Action (mapped to Cancel usually, or a Neutral No)
+        if (!string.IsNullOrEmpty(altText))
+        {
+            buttons.Children.Add(CreateBtn(altText, DialogResult.Cancel));
+        }
+
+        // 2. Negative Action (mapped to No)
+        buttons.Children.Add(CreateBtn(cancelText, DialogResult.No, isCancel: true));
+
+        // 1. Positive Action (mapped to Yes)
+        buttons.Children.Add(CreateBtn(okText, DialogResult.Yes, isDefault: true));
 
         var content = new Border
         {
@@ -128,17 +150,7 @@ public class DialogService : IDialogService
                         Text = message,
                         TextWrapping = TextWrapping.Wrap
                     },
-                    new StackPanel
-                    {
-                        Orientation = Orientation.Horizontal,
-                        Spacing = 10,
-                        HorizontalAlignment = HorizontalAlignment.Right,
-                        Children =
-                        {
-                            noButton,
-                            yesButton
-                        }
-                    }
+                    buttons
                 }
             }
         };

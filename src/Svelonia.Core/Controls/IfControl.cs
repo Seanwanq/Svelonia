@@ -11,6 +11,7 @@ public class IfControl : UserControl
 {
     private readonly State<bool> _condition;
     private readonly Func<Control> _builder;
+    private readonly Func<Control>? _elseBuilder;
     private readonly SveloniaTransition? _transition;
 
     /// <summary>
@@ -18,12 +19,14 @@ public class IfControl : UserControl
     /// </summary>
     /// <param name="condition"></param>
     /// <param name="builder"></param>
+    /// <param name="elseBuilder"></param>
     /// <param name="animate"></param>
     /// <param name="transition"></param>
-    public IfControl(State<bool> condition, Func<Control> builder, bool animate = false, SveloniaTransition? transition = null)
+    public IfControl(State<bool> condition, Func<Control> builder, Func<Control>? elseBuilder = null, bool animate = false, SveloniaTransition? transition = null)
     {
         _condition = condition;
         _builder = builder;
+        _elseBuilder = elseBuilder;
 
         if (transition != null)
         {
@@ -61,50 +64,35 @@ public class IfControl : UserControl
     {
         if (value)
         {
-            // Show
-            if (Content == null)
-            {
-                var control = _builder();
-
-                if (_transition != null)
-                {
-                    // 1. Initial State
-                    _transition.ApplyInitialState?.Invoke(control);
-
-                    // 2. Setup Transitions
-                    control.Transitions = _transition.CreateTransitions();
-                }
-
-                Content = control;
-
-                if (_transition != null)
-                {
-                    // 3. Trigger Active State (Enter Animation)
-                    await Task.Yield(); // Allow layout pass
-                    _transition.ApplyActiveState?.Invoke(control);
-                }
-            }
+            // Show Primary View
+            var control = _builder();
+            ApplyTransition(control);
+            Content = control;
         }
         else
         {
-            // Hide
-            if (Content != null)
+            // Show Else View or Clear
+            if (_elseBuilder != null)
             {
-                if (_transition != null && Content is Control control)
-                {
-                    // 1. Trigger Exit State (Back to Initial)
-                    _transition.ApplyInitialState?.Invoke(control);
-
-                    // 2. Wait
-                    await Task.Delay(_transition.Duration);
-                }
-
-                // Double check condition hasn't flipped back while waiting
-                if (!_condition.Value)
-                {
-                    Content = null;
-                }
+                var control = _elseBuilder();
+                ApplyTransition(control);
+                Content = control;
             }
+            else
+            {
+                Content = null;
+            }
+        }
+    }
+
+    private async void ApplyTransition(Control control)
+    {
+        if (_transition != null)
+        {
+            _transition.ApplyInitialState?.Invoke(control);
+            control.Transitions = _transition.CreateTransitions();
+            await Task.Yield();
+            _transition.ApplyActiveState?.Invoke(control);
         }
     }
 }

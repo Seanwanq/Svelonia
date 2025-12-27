@@ -105,45 +105,111 @@ public class SveloniaTheme
         throw new KeyNotFoundException($"Resource '{key}' not found in Application.Resources");
     }
 
+    /// <summary>
+    /// Clears all resources that were likely loaded by SveloniaTheme (optional, might be hard to track)
+    /// Actually, just overwriting is usually enough if we know the keys.
+    /// </summary>
+    public static void Clear()
+    {
+        // No-op for now as we overwrite by key, 
+        // but could be used to reset to a clean state if we tracked loaded keys.
+    }
+
     private static void ApplyResource(string key, object value)
     {
         if (Application.Current == null) return;
 
         object finalValue = value;
 
-        // Try to parse color if it's a string starting with #
+        // Try to parse color or gradient if it's a string
         if (value is JsonElement element && element.ValueKind == JsonValueKind.String)
         {
             var str = element.GetString();
-            if (str != null && str.StartsWith("#") && Color.TryParse(str, out var color))
+            if (str == null)
+            {
+                finalValue = string.Empty;
+            }
+            else if (str.StartsWith("#") && Color.TryParse(str, out var color))
             {
                 finalValue = new SolidColorBrush(color);
             }
-            else
+            else if (str.StartsWith("linear-gradient("))
             {
-                finalValue = str ?? string.Empty;
+                finalValue = ParseLinearGradient(str);
             }
-        }
-        else if (value is JsonElement num && num.ValueKind == JsonValueKind.Number)
-        {
-            var val = num.GetDouble();
-            // Intelligent conversion for common UI types
-            if (key.Contains("Radius", StringComparison.OrdinalIgnoreCase))
+            else if (key.Contains("Shadow") && Color.TryParse(str.Split(' ').Last(), out _))
             {
-                finalValue = new CornerRadius(val);
-            }
-            else if (key.Contains("Padding", StringComparison.OrdinalIgnoreCase) || 
-                     key.Contains("Margin", StringComparison.OrdinalIgnoreCase) ||
-                     key.Contains("Thickness", StringComparison.OrdinalIgnoreCase))
-            {
-                finalValue = new Thickness(val);
+                finalValue = ParseBoxShadow(str);
             }
             else
             {
-                finalValue = val;
+                finalValue = str;
             }
         }
 
+        // Use indexer to ensure it updates if already exists
         Application.Current.Resources[key] = finalValue;
+    }
+
+    private static BoxShadows ParseBoxShadow(string str)
+    {
+        // Format: "OffsetX OffsetY Blur [Spread] #Color"
+        try
+        {
+            var parts = str.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            var colorStr = parts.Last();
+            if (!Color.TryParse(colorStr, out var color)) color = Colors.Black;
+
+            double offsetX = double.Parse(parts[0]);
+            double offsetY = double.Parse(parts[1]);
+            double blur = double.Parse(parts[2]);
+            double spread = 0;
+            if (parts.Count > 4) spread = double.Parse(parts[3]);
+
+            return new BoxShadows(new BoxShadow
+            {
+                OffsetX = offsetX,
+                OffsetY = offsetY,
+                Blur = blur,
+                Spread = spread,
+                Color = color
+            });
+        }
+        catch
+        {
+            return new BoxShadows(new BoxShadow());
+        }
+    }
+
+    private static IBrush ParseLinearGradient(string css)
+    {
+        // Simple parser for linear-gradient(#color1, #color2)
+        try
+        {
+            var content = css.Replace("linear-gradient(", "").Trim().TrimEnd(')');
+            var parts = content.Split(',').Select(p => p.Trim()).ToList();
+            
+            var gradient = new LinearGradientBrush
+            {
+                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative)
+            };
+
+            if (parts.Count == 1) return new SolidColorBrush(Color.Parse(parts[0]));
+
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (Color.TryParse(parts[i], out var color))
+                {
+                    gradient.GradientStops.Add(new GradientStop(color, (double)i / (parts.Count - 1)));
+                }
+            }
+
+            return gradient;
+        }
+        catch
+        {
+            return Brushes.Magenta;
+        }
     }
 }
