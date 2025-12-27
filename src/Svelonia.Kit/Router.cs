@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Svelonia.Core;
 
 namespace Svelonia.Kit;
