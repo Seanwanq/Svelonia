@@ -13,17 +13,21 @@ In standard Avalonia, you often need to manually unsubscribe from events or disp
 ```csharp
 public class TimerComponent : Component
 {
+    private System.Timers.Timer _timer;
+
     public TimerComponent()
     {
-        var timer = new System.Timers.Timer(1000);
-        timer.Start();
+        _timer = new System.Timers.Timer(1000);
+        _timer.Start();
 
         // Automatically Dispose the timer when this component 
         // is removed from the screen (Detached).
-        Track(timer); 
+        Track(_timer); 
     }
 }
 ```
+
+> **Debug Warning**: In DEBUG builds, Svelonia will automatically scan your component when it disposes. If it finds an `IDisposable` field (like `_timer` above) that you forgot to `Track()`, it will print a warning to the Debug Output.
 
 ### OnDispose
 

@@ -91,6 +91,20 @@ public class SveloniaTheme
         Update();
     }
 
+    /// <summary>
+    /// Retrieves a strongly-typed resource from the application resources.
+    /// Throws KeyNotFoundException if missing or invalid type.
+    /// </summary>
+    public static T Get<T>(string key)
+    {
+        if (Application.Current != null && Application.Current.TryGetResource(key, null, out var res))
+        {
+            if (res is T t) return t;
+            throw new InvalidCastException($"Resource '{key}' is of type {res?.GetType().Name}, expected {typeof(T).Name}");
+        }
+        throw new KeyNotFoundException($"Resource '{key}' not found in Application.Resources");
+    }
+
     private static void ApplyResource(string key, object value)
     {
         if (Application.Current == null) return;

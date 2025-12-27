@@ -26,6 +26,9 @@ public class Component : UserControl, IDisposable
     public void Dispose()
     {
         if (_isDisposed) return;
+        
+        CheckUntrackedDisposables();
+        
         _isDisposed = true;
 
         foreach (var d in _disposables)
@@ -35,6 +38,35 @@ public class Component : UserControl, IDisposable
         _disposables.Clear();
 
         OnDispose();
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void CheckUntrackedDisposables()
+    {
+        var type = GetType();
+        var fields = type.GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+        
+        foreach (var field in fields)
+        {
+            if (typeof(IDisposable).IsAssignableFrom(field.FieldType))
+            {
+                try
+                {
+                    var value = field.GetValue(this) as IDisposable;
+                    if (value != null && !_disposables.Contains(value))
+                    {
+                        // Skip Visuals (Controls) as they are usually managed by the Visual Tree
+                        if (value is Avalonia.Visual) continue;
+                        
+                        // Skip Self
+                        if (ReferenceEquals(value, this)) continue;
+
+                        System.Diagnostics.Debug.WriteLine($"[Svelonia Warning] Component '{type.Name}' has an IDisposable field '{field.Name}' ({value.GetType().Name}) that is not being tracked. Call Track() to ensure cleanup.");
+                    }
+                }
+                catch { /* Ignore reflection errors */ }
+            }
+        }
     }
 
     /// <summary>
