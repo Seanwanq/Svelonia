@@ -150,18 +150,43 @@ public static class ControlStyleExtensions
     {
         if (value == null) return false;
         
-        // Unwrap and Convert
-        var finalValue = SveConverter.Convert(prop, Unwrap(value));
-
         if (value is IState state)
         {
-            control.Bind(prop, new Binding { Source = state, Path = nameof(IState.ValueObject), Mode = BindingMode.OneWay });
+            void Handler(object? val)
+            {
+                // Ensure value is converted (e.g. numeric to Thickness)
+                var converted = SveConverter.Convert(prop, val);
+
+                if (converted is Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension dr)
+                {
+                    control.Bind(prop, dr);
+                }
+                else
+                {
+                    control.SetValue(prop, converted);
+                }
+            }
+
+            // Initial set
+            Handler(state.ValueObject);
+
+            control.AttachedToVisualTree += (s, e) =>
+            {
+                Handler(state.ValueObject);
+                state.OnChangeObject += Handler;
+            };
+            control.DetachedFromVisualTree += (s, e) =>
+            {
+                state.OnChangeObject -= Handler;
+            };
+            if (control.IsLoaded) state.OnChangeObject += Handler;
             return true;
         }
-        
-        if (finalValue is Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension dr)
+
+        var finalValue = SveConverter.Convert(prop, value);
+        if (finalValue is Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension drDirect)
         {
-            control.Bind(prop, dr);
+            control.Bind(prop, drDirect);
             return true;
         }
 
