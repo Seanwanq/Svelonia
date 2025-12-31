@@ -27,15 +27,6 @@ public static class DragDropExtensions
     /// <summary>
     /// Enables Drag and Drop support for the control.
     /// </summary>
-    /// <param name="control">The control to be dragged (or the payload source).</param>
-    /// <param name="data">The data to transfer. Can be a string (Text), IEnumerable&lt;string&gt; (Files), or any object.</param>
-    /// <param name="effect">The allowed drag effects (Copy, Move, Link).</param>
-    /// <param name="handle">Optional. A child control that acts as the drag handle. If null, the entire control is the handle.</param>
-    /// <param name="format">Optional. Custom data format string.</param>
-    /// <param name="enable">Optional. State to control whether dragging is enabled.</param>
-    /// <param name="visualMode">Optional. Visual feedback style. Default is Ghost.</param>
-    /// <param name="onStart">Optional. Callback when drag starts.</param>
-    /// <param name="onEnd">Optional. Callback when drag ends.</param>
     public static T Draggable<T>(this T control, 
         object data, 
         DragDropEffects effect = DragDropEffects.Copy, 
@@ -43,7 +34,9 @@ public static class DragDropExtensions
         string? format = null,
         Svelonia.Core.State<bool>? enable = null,
         DragVisualMode visualMode = DragVisualMode.Ghost,
+        Func<Image, Control>? ghostTransform = null,
         Action? onStart = null,
+        Action<Point>? onDrag = null,
         Action? onEnd = null) 
         where T : Control
     {
@@ -53,7 +46,6 @@ public static class DragDropExtensions
         trigger.PointerPressed += (s, e) =>
         {
             if (enable != null && !enable.Value) return;
-
             if (e.GetCurrentPoint(trigger).Properties.IsLeftButtonPressed)
             {
                 state.StartPoint = e.GetPosition(trigger);
@@ -62,10 +54,7 @@ public static class DragDropExtensions
             }
         };
 
-        trigger.PointerReleased += (s, e) =>
-        {
-            state.IsPressed = false;
-        };
+        trigger.PointerReleased += (s, e) => { state.IsPressed = false; };
 
         trigger.PointerMoved += async (s, e) =>
         {
@@ -74,38 +63,34 @@ public static class DragDropExtensions
             var currentPoint = e.GetPosition(trigger);
             var distance = Math.Sqrt(Math.Pow(currentPoint.X - state.StartPoint.X, 2) + Math.Pow(currentPoint.Y - state.StartPoint.Y, 2));
 
-            // Threshold for drag start (e.g. 10 pixels)
             if (distance > 10)
             {
-                state.IsPressed = false; // Stop tracking once drag starts
-
+                state.IsPressed = false;
                 var dataObject = CreateDataObject(data, format);
-                
                 // Fire drag operation
                 onStart?.Invoke();
                 
+                // Ensure UI is updated before capture
+                control.UpdateLayout();
+
                 // Force AllowDrop to ensure DragOver fires on self/handle (prevents ghost freeze on self)
+                var originalOpacity = control.Opacity;
+                var originalAllowDrop = control.GetValue(DragDrop.AllowDropProperty);
+                object? triggerOriginalAllowDrop = (trigger != control) ? trigger.GetValue(DragDrop.AllowDropProperty) : null;
+
+                // Force AllowDrop for continuous events
                 control.SetValue(DragDrop.AllowDropProperty, true);
                 if (trigger != control) trigger.SetValue(DragDrop.AllowDropProperty, true);
 
-                // Ghost Setup vars
-                Control? ghost = null;
+                Control? ghostContainer = null;
                 AdornerLayer? adornerLayer = null;
                 EventHandler<DragEventArgs>? dragOverHandler = null;
                 EventHandler<DragEventArgs>? catchAllHandler = null;
                 TopLevel? topLevel = TopLevel.GetTopLevel(control);
                 object? topLevelOriginalAllowDrop = null;
 
-                // Visual Feedback state
-                var originalOpacity = control.Opacity;
-                var originalAllowDrop = control.GetValue(DragDrop.AllowDropProperty); 
-                object? triggerOriginalAllowDrop = (trigger != control) ? trigger.GetValue(DragDrop.AllowDropProperty) : null;
-
-                bool useGhost = visualMode != DragVisualMode.None;
-
-                if (useGhost && topLevel != null)
+                if (visualMode != DragVisualMode.None && topLevel != null)
                 {
-                    // Ensure TopLevel receives DragOver events everywhere
                     topLevelOriginalAllowDrop = topLevel.GetValue(DragDrop.AllowDropProperty);
                     topLevel.SetValue(DragDrop.AllowDropProperty, true);
 
@@ -114,95 +99,74 @@ public static class DragDropExtensions
                         adornerLayer = AdornerLayer.GetAdornerLayer(control);
                         if (adornerLayer != null)
                         {
-                            // Capture bitmap BEFORE modifying opacity
+                            // 1. Capture snapshot BEFORE hiding source
                             var bitmap = new RenderTargetBitmap(new PixelSize((int)control.Bounds.Width, (int)control.Bounds.Height), new Vector(96, 96));
                             bitmap.Render(control);
 
-                            ghost = new Image 
+                            var ghostImage = new Image 
                             { 
                                 Source = bitmap, 
                                 Width = control.Bounds.Width, 
                                 Height = control.Bounds.Height,
-                                Opacity = visualMode == DragVisualMode.Move ? 1.0 : 0.7,
+                                Opacity = (visualMode == DragVisualMode.Move) ? 1.0 : 0.7,
                                 IsHitTestVisible = false
                             };
 
-                            // Apply Visual Feedback AFTER capture
+                            // 2. Wrap/Transform Ghost
+                            ghostContainer = ghostTransform != null ? ghostTransform(ghostImage) : ghostImage;
+                            ghostContainer.IsHitTestVisible = false;
+
+                            // 3. Hide/Dim source AFTER capture
                             if (onStart == null)
                             {
-                                if (visualMode == DragVisualMode.Ghost) control.Opacity = 0.5;
-                                else if (visualMode == DragVisualMode.Move) control.Opacity = 0.0;
+                                control.Opacity = (visualMode == DragVisualMode.Move) ? 0.0 : 0.5;
                             }
 
-                            // Initial Position (relative to AdornerLayer)
-                            // We use the current pointer position to place it immediately
+                            // 4. Initial positioning
                             var currentPos = e.GetPosition(adornerLayer);
-                            Canvas.SetLeft(ghost, currentPos.X - ghost.Width / 2);
-                            Canvas.SetTop(ghost, currentPos.Y - ghost.Height / 2);
+                            Canvas.SetLeft(ghostContainer, currentPos.X - control.Bounds.Width / 2);
+                            Canvas.SetTop(ghostContainer, currentPos.Y - control.Bounds.Height / 2);
+                            adornerLayer.Children.Add(ghostContainer);
 
-                            adornerLayer.Children.Add(ghost);
-
-                            // Track Mouse (Tunneling) - Updates Ghost Position
+                            // 5. Update loop
                             dragOverHandler = (sender, args) =>
                             {
                                 var pos = args.GetPosition(adornerLayer);
-                                Canvas.SetLeft(ghost, pos.X - ghost.Width / 2);
-                                Canvas.SetTop(ghost, pos.Y - ghost.Height / 2);
+                                Canvas.SetLeft(ghostContainer, pos.X - control.Bounds.Width / 2);
+                                Canvas.SetTop(ghostContainer, pos.Y - control.Bounds.Height / 2);
+                                onDrag?.Invoke(args.GetPosition(topLevel));
                             };
-                            // DragOver is Bubble-only in Avalonia, so Tunnel won't work.
-                            // We use Bubble with handledEventsToo: true to capture it at TopLevel even if children handled it.
                             topLevel.AddHandler(DragDrop.DragOverEvent, dragOverHandler, RoutingStrategies.Bubble, handledEventsToo: true);
 
-                            // Catch-all (Bubbling) - Ensures DragOver keeps firing over inert controls
                             catchAllHandler = (sender, args) =>
                             {
-                                if (!args.Handled)
-                                {
-                                    args.DragEffects = effect;
-                                    args.Handled = true;
-                                }
+                                if (!args.Handled) { args.DragEffects = effect; args.Handled = true; }
                             };
                             topLevel.AddHandler(DragDrop.DragOverEvent, catchAllHandler, RoutingStrategies.Bubble);
                         }
                     }
-                    catch
-                    {
-                        // Fallback if ghost creation fails
-                        if (ghost != null && adornerLayer != null) adornerLayer.Children.Remove(ghost);
-                        ghost = null;
-                    }
+                    catch { /* Fallback */ }
                 }
 
                 try
                 {
-#pragma warning disable CS0618 // Type or member is obsolete
+#pragma warning disable CS0618
                     await DragDrop.DoDragDrop(e, dataObject, effect);
-#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning restore CS0618
                 }
                 finally
                 {
-                    if (onStart == null) control.Opacity = originalOpacity;
+                    // Cleanup
+                    control.Opacity = originalOpacity;
                     control.SetValue(DragDrop.AllowDropProperty, originalAllowDrop);
                     if (triggerOriginalAllowDrop != null && trigger != control) trigger.SetValue(DragDrop.AllowDropProperty, triggerOriginalAllowDrop);
                     
                     if (topLevel != null && topLevelOriginalAllowDrop != null)
-                    {
                         topLevel.SetValue(DragDrop.AllowDropProperty, topLevelOriginalAllowDrop);
-                    }
 
-                    // Cleanup Ghost
-                    if (ghost != null && adornerLayer != null)
-                    {
-                        adornerLayer.Children.Remove(ghost);
-                    }
-                    if (dragOverHandler != null && topLevel != null)
-                    {
-                        topLevel.RemoveHandler(DragDrop.DragOverEvent, dragOverHandler);
-                    }
-                    if (catchAllHandler != null && topLevel != null)
-                    {
-                        topLevel.RemoveHandler(DragDrop.DragOverEvent, catchAllHandler);
-                    }
+                    if (ghostContainer != null && adornerLayer != null) adornerLayer.Children.Remove(ghostContainer);
+                    if (dragOverHandler != null && topLevel != null) topLevel.RemoveHandler(DragDrop.DragOverEvent, dragOverHandler);
+                    if (catchAllHandler != null && topLevel != null) topLevel.RemoveHandler(DragDrop.DragOverEvent, catchAllHandler);
 
                     onEnd?.Invoke();
                 }
@@ -212,9 +176,6 @@ public static class DragDropExtensions
         return control;
     }
 
-    /// <summary>
-    /// Sets the control as a Drop Target.
-    /// </summary>
     public static T OnDrop<T>(this T control, Action<DragEventArgs> handler) where T : Control
     {
         DragDrop.SetAllowDrop(control, true);
@@ -222,9 +183,6 @@ public static class DragDropExtensions
         return control;
     }
 
-    /// <summary>
-    /// Handle DragOver event (e.g. to validate data or change cursor).
-    /// </summary>
     public static T OnDragOver<T>(this T control, Action<DragEventArgs> handler) where T : Control
     {
         DragDrop.SetAllowDrop(control, true);
@@ -232,9 +190,6 @@ public static class DragDropExtensions
         return control;
     }
 
-    /// <summary>
-    /// Handle DragEnter event (e.g. for visual feedback).
-    /// </summary>
     public static T OnDragEnter<T>(this T control, Action<DragEventArgs> handler) where T : Control
     {
         DragDrop.SetAllowDrop(control, true);
@@ -242,9 +197,6 @@ public static class DragDropExtensions
         return control;
     }
 
-    /// <summary>
-    /// Handle DragLeave event (e.g. to clean up visual feedback).
-    /// </summary>
     public static T OnDragLeave<T>(this T control, Action<RoutedEventArgs> handler) where T : Control
     {
         DragDrop.SetAllowDrop(control, true);
@@ -254,34 +206,13 @@ public static class DragDropExtensions
 
     private static DataObject CreateDataObject(object data, string? format)
     {
-#pragma warning disable CS0618 // Type or member is obsolete
+#pragma warning disable CS0618
         var dataObject = new DataObject();
-        
-        if (!string.IsNullOrEmpty(format))
-        {
-            dataObject.Set(format, data);
-            return dataObject;
-        }
-
-        if (data is string str)
-        {
-            dataObject.Set("Text", str);
-        }
-        else if (data is IEnumerable<string> files)
-        {
-             // Simple heuristic check if it looks like files
-             dataObject.Set("FileNames", files);
-        }
-        else
-        {
-            // Default object fallback
-            dataObject.Set("SveloniaData", data);
-            
-            // Also try to set ToString as text for external compatibility
-            dataObject.Set("Text", data.ToString() ?? "");
-        }
-
+        if (!string.IsNullOrEmpty(format)) dataObject.Set(format, data);
+        else if (data is string str) dataObject.Set("Text", str);
+        else if (data is IEnumerable<string> files) dataObject.Set("FileNames", files);
+        else { dataObject.Set("SveloniaData", data); dataObject.Set("Text", data.ToString() ?? ""); }
         return dataObject;
-#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning restore CS0618
     }
 }

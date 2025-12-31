@@ -55,3 +55,6 @@ public override void Initialize()
 
 8.  **[Debugging & Hot Reload](./Debugging.md)**
     Tools for monitoring state changes and hooking into the Hot Reload pipeline.
+
+9.  **[AOT Support](./AOT.md)**
+    Ensuring your application is ready for Native AOT and high-performance trimming.
