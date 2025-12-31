@@ -21,6 +21,7 @@ public static class DragDropExtensions
     private class DragState
     {
         public Point StartPoint { get; set; }
+        public Point InitialMouseOffset { get; set; } // New: Offset from control top-left
         public bool IsPressed { get; set; }
     }
 
@@ -49,6 +50,8 @@ public static class DragDropExtensions
             if (e.GetCurrentPoint(trigger).Properties.IsLeftButtonPressed)
             {
                 state.StartPoint = e.GetPosition(trigger);
+                // Capture the exact offset within the control
+                state.InitialMouseOffset = e.GetPosition(control); 
                 state.IsPressed = true;
                 e.Handled = false; 
             }
@@ -67,13 +70,9 @@ public static class DragDropExtensions
             {
                 state.IsPressed = false;
                 var dataObject = CreateDataObject(data, format);
-                // Fire drag operation
                 onStart?.Invoke();
                 
-                // Ensure UI is updated before capture
-                control.UpdateLayout();
-
-                // Force AllowDrop to ensure DragOver fires on self/handle (prevents ghost freeze on self)
+                // State tracking
                 var originalOpacity = control.Opacity;
                 var originalAllowDrop = control.GetValue(DragDrop.AllowDropProperty);
                 object? triggerOriginalAllowDrop = (trigger != control) ? trigger.GetValue(DragDrop.AllowDropProperty) : null;
@@ -122,18 +121,18 @@ public static class DragDropExtensions
                                 control.Opacity = (visualMode == DragVisualMode.Move) ? 0.0 : 0.5;
                             }
 
-                            // 4. Initial positioning
+                            // 4. Initial positioning using saved offset
                             var currentPos = e.GetPosition(adornerLayer);
-                            Canvas.SetLeft(ghostContainer, currentPos.X - control.Bounds.Width / 2);
-                            Canvas.SetTop(ghostContainer, currentPos.Y - control.Bounds.Height / 2);
+                            Canvas.SetLeft(ghostContainer, currentPos.X - state.InitialMouseOffset.X);
+                            Canvas.SetTop(ghostContainer, currentPos.Y - state.InitialMouseOffset.Y);
                             adornerLayer.Children.Add(ghostContainer);
 
                             // 5. Update loop
                             dragOverHandler = (sender, args) =>
                             {
                                 var pos = args.GetPosition(adornerLayer);
-                                Canvas.SetLeft(ghostContainer, pos.X - control.Bounds.Width / 2);
-                                Canvas.SetTop(ghostContainer, pos.Y - control.Bounds.Height / 2);
+                                Canvas.SetLeft(ghostContainer, pos.X - state.InitialMouseOffset.X);
+                                Canvas.SetTop(ghostContainer, pos.Y - state.InitialMouseOffset.Y);
                                 onDrag?.Invoke(args.GetPosition(topLevel));
                             };
                             topLevel.AddHandler(DragDrop.DragOverEvent, dragOverHandler, RoutingStrategies.Bubble, handledEventsToo: true);
