@@ -12,7 +12,7 @@
     <PackageProjectUrl>https://github.com/Seanwanq/Svelonia</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Seanwanq/Svelonia</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReadmeFile Condition="Exists('README.md')">README.md</PackageReadmeFile>
 
     <!-- Build Settings -->
     <Nullable>enable</Nullable>
