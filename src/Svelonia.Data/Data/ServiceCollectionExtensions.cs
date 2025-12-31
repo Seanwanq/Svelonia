@@ -14,6 +14,7 @@ public static class ServiceCollectionExtensions
     /// <param name="services"></param>
     /// <param name="assemblyToScan"></param>
     /// <returns></returns>
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Assembly scanning is not AOT safe. Use AddSveloniaDataAot() instead.")]
     public static IServiceCollection AddSveloniaData(this IServiceCollection services, Assembly assemblyToScan)
     {
         services.AddSingleton<IMediator, Mediator>();

@@ -32,8 +32,8 @@ public static class CommandExtensions
         {
             if (mediator == null)
             {
-                if (Avalonia.Application.Current is Application app &&
-                    app.GetType().GetProperty("Services")?.GetValue(app) is IServiceProvider sp)
+                if (Avalonia.Application.Current is ISveloniaApplication app &&
+                    app.Services is IServiceProvider sp)
                 {
                     mediator = sp.GetService(typeof(IMediator)) as IMediator;
                 }

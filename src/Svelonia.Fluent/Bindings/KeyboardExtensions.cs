@@ -88,10 +88,9 @@ public static class KeyboardExtensions
     {
         return control.OnKey(gesture, () =>
         {
-            // Resolve mediator dynamically
-            if (Avalonia.Application.Current is Application app &&
-                app.GetType().GetProperty("Services")?.GetValue(app) is IServiceProvider sp &&
-                sp.GetService(typeof(IMediator)) is IMediator mediator)
+            // Resolve mediator via ISveloniaApplication (AOT-Safe)
+            if (Avalonia.Application.Current is ISveloniaApplication app &&
+                app.Services?.GetService(typeof(IMediator)) is IMediator mediator)
             {
                 mediator.Send(command);
             }
@@ -106,9 +105,9 @@ public static class KeyboardExtensions
     {
         return control.OnKey(gesture, () =>
         {
-            if (Avalonia.Application.Current is Application app &&
-                app.GetType().GetProperty("Services")?.GetValue(app) is IServiceProvider sp &&
-                sp.GetService(typeof(IMediator)) is IMediator mediator)
+            // Resolve mediator via ISveloniaApplication (AOT-Safe)
+            if (Avalonia.Application.Current is ISveloniaApplication app &&
+                app.Services?.GetService(typeof(IMediator)) is IMediator mediator)
             {
                 mediator.Send(commandFactory());
             }

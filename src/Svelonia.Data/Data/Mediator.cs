@@ -87,6 +87,7 @@ public class Mediator(IServiceProvider serviceProvider) : IMediator
     /// <param name="token"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("This method uses reflection and is not AOT safe.")]
     private async Task<TResponse> LegacyReflectionDispatch<TResponse>(IRequest<TResponse> request, CancellationToken token)
     {
         var requestType = request.GetType();

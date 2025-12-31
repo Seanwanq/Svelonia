@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Avalonia;
 using Avalonia.Media;
 
@@ -16,7 +17,7 @@ public class SveloniaTheme
     {
         try
         {
-            var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+            var dict = JsonSerializer.Deserialize(json, SveloniaThemeJsonContext.Default.DictionaryStringObject);
             if (dict == null) return;
 
             foreach (var item in dict)
@@ -212,4 +213,9 @@ public class SveloniaTheme
             return Brushes.Magenta;
         }
     }
+}
+
+[JsonSerializable(typeof(Dictionary<string, object>))]
+internal partial class SveloniaThemeJsonContext : JsonSerializerContext
+{
 }
