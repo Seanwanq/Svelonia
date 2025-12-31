@@ -1,82 +1,110 @@
 # Drag & Drop Deep Dive
 
-Dragging is more than just data transfer; it's about the visual sense of "control." Svelonia provides two distinct APIs to cover everything from simple data movement to complex real-time interactions.
-
-## 1. Conceptual Model: Standard vs. Live
-
-| Dimension | System-Level `Draggable` (Standard) | Real-Time `LiveDraggable` (Live) |
-| :--- | :--- | :--- |
-| **Implementation** | OS OLE / DragDrop Loop | Pointer Capture + RenderTransform |
-| **Blocking** | Modal (blocks other interactions) | Non-modal (fully interactive) |
-| **Concurrency** | Single object | **Multi-touch concurrent** |
-| **External** | Supports cross-app (e.g., to Desktop) | Application internal only |
-| **Best For** | File uploads, form filling, reordering | Mind maps, whiteboards, game objects |
+Svelonia provides a powerful, semantic Drag & Drop API designed for modern UIs. We categorize Drag & Drop into two distinct systems: **Standard (`Draggable`)** and **Real-Time (`LiveDraggable`)**.
 
 ---
 
-## 2. System-Level Dragging (`Draggable`)
+## 1. Conceptual Model: Standard vs. Live
 
-### A. Practical: Cross-Container Movement (State-Driven)
-This is the most common use case: moving an item from a "Source" list to a "Target" list.
+| Feature | Standard `Draggable` | Real-Time `LiveDraggable` |
+| :--- | :--- | :--- |
+| **Implementation** | OS OLE Loop (Blocking) | Pointer Capture + RenderTransform (Non-blocking) |
+| **Concurrency** | Single object at a time | **Multi-touch concurrent dragging** |
+| **Scope** | Cross-window / Cross-process | Application internal only |
+| **Visuals** | Static Snapshot (Ghost Image) | **Fully Interactive UI (Live Ghost)** |
+| **Best For** | Data exchange, List sorting | Whiteboards, Node editors, Games |
 
+---
+
+## 2. Standard Drag & Drop (`Draggable`)
+
+### Basic Example
 ```csharp
-// Define your state
-var sourceList = new State<IEnumerable<string>>(new[] { "Item 1", "Item 2" });
-var targetList = new State<IEnumerable<string>>(new string[0]);
+var items = new State<List<string>>(new() { "Item 1", "Item 2" });
 
-// Source container rendering
-new StackPanel()
-    .Children(new ForControl(sourceList, item => 
-        new Border().TextContent(item)
-            .Draggable(data: item, effect: DragDropEffects.Move) // Transfer the item string
-    ));
+// Source
+new Border().Draggable(data: "Item 1", effect: DragDropEffects.Move);
 
-// Target container rendering
-new Border()
-    .OnDrop(e => {
-        var item = e.Data.GetText();
-        if (item != null) {
-            // Reactive update: UI refreshes automatically
-            sourceList.Value = sourceList.Value.Where(x => x != item);
-            targetList.Value = targetList.Value.Append(item);
-        }
-    });
+// Target
+new Border().OnDrop(e => {
+    var data = e.Data.GetText();
+    // Update your state here
+});
 ```
 
-### B. Advanced Customization: "Adding Flavor" to the Ghost (Ghost Transform)
-When dragging a complex card, you might want the visual representation to show extra info (like dragging status or real-time coordinates).
-
-The `ghostTransform` hook gives you the auto-generated `Image` (a snapshot of the control taken at the moment of dragging) and expects a `Control` back. You can wrap this image in a `Border`, `StackPanel`, or even a `Canvas` to add custom UI elements that follow the mouse.
-
+### Advanced: Ghost Customization & Logic
 ```csharp
 .Draggable(
     data: myModel,
-    visualMode: DragVisualMode.Move, // Original object is hidden
-    ghostTransform: img => new StackPanel()
-        .Spacing(5)
-        .Children(
-            // 1. The original snapshot of the card
-            img.Opacity(0.8).Effect(new DropShadowEffect { BlurRadius = 10 }), 
-            // 2. A dynamic "status" layer added on top/bottom
-            new Border()
-                .Background(Brushes.DarkRed)
-                .Padding(5).Rounded(4)
-                .Child(new TextBlock().TextContent("Moving to new group...").Foreground(Brushes.White))
-        )
+    visualMode: DragVisualMode.Move, // Hides original during drag
+    animateBack: true,               // Returns to start if dropped outside
+    ghostTransform: img => new StackPanel().Children(
+        img, 
+        new TextBlock().TextContent("Moving...").Foreground(Brushes.White)
+    ),
+    onStart: () => Console.WriteLine("Drag Started"),
+    onEnd: result => {
+        if (result == DragDropEffects.Move) { /* Handle Success */ }
+    }
 )
 ```
 
-### C. Real-Time Layout Reflow (OnDrag)
-During the drag operation, use the `onDrag` callback to notify other elements to "make room."
+---
+
+## 3. Real-Time Dragging (`LiveDraggable`)
+
+### Basic Example
+```csharp
+new Border().W(100).H(100).Background(Brushes.Blue)
+    .LiveDraggable(animateBack: true);
+```
+
+### Advanced: Constraints and Live Ghosts
+```csharp
+var ballPos = new State<Point>(default);
+
+new Border()
+    .LiveDraggable(
+        handle: myGripControl,           // Drag only via handle
+        constrainTo: myBoundaryPanel,    // Clamp to parent boundaries
+        boundaryMode: LiveDragBoundaryMode.Clamp, 
+        ghostTransform: _ => new MyComplexOverlay(ballPos), // Reactive top-layer UI
+        onMove: p => ballPos.Value = p   // Update state for reactive bindings
+    );
+```
+
+---
+
+## 4. Drop Target Interactivity
+
+To create a professional feel, provide feedback when an item is hovered over a target.
+
+```csharp
+var isOver = new State<bool>(false);
+
+new Border()
+    .Background(new Computed<IBrush>(() => isOver.Value ? Brushes.LightGreen : Brushes.White))
+    .OnDragEnter(e => isOver.Value = true)
+    .OnDragLeave(e => isOver.Value = false)
+    .OnDrop(e => {
+        isOver.Value = false;
+        // Process data...
+    });
+```
+
+---
+
+## 5. State Management Patterns
+
+The most common pattern is updating a list state upon a successful move.
 
 ```csharp
 .Draggable(
-    data: "NODE_X",
-    onDrag: globalPos => {
-        // globalPos is the real-time mouse position relative to the Window
-        if (CheckOverlap(globalPos, targetArea)) {
-            isAreaHighlighted.Value = true;
-            TriggerReflowLayout(); // Trigger reflow animations for other nodes
+    data: item,
+    effect: DragDropEffects.Move,
+    onEnd: result => {
+        if (result == DragDropEffects.Move) {
+            sourceList.Value = sourceList.Value.Where(x => x != item).ToList();
         }
     }
 )
@@ -84,77 +112,40 @@ During the drag operation, use the `onDrag` callback to notify other elements to
 
 ---
 
-## 3. Real-Time Interactive Dragging (`LiveDraggable`)
+## 6. API Reference
 
-### A. Mind Map Style Free Movement
-`LiveDraggable` uses `RenderTransform`, meaning it doesn't trigger the layout system (like StackPanel re-measurement), making it perfect for free-form canvases.
+### `Draggable<T>`
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `data` | `object` | **Required** | The payload to be transferred. |
+| `effect` | `DragDropEffects` | `Copy` | Allowed operations (Copy, Move, Link). |
+| `handle` | `Control?` | `null` | Optional trigger element. |
+| `format` | `string?` | `null` | Custom data format string. |
+| `enable` | `State<bool>?` | `null` | Reactive toggle for dragging. |
+| `visualMode` | `DragVisualMode` | `Ghost` | `None`, `Ghost` (dimmed), or `Move` (hidden). |
+| `ghostTransform`| `Func<Image, Control>?`| `null` | Customize the static drag snapshot. |
+| `animateBack` | `bool` | `true` | Snap back animation on cancellation. |
+| `onStart` | `Action?` | `null` | Callback when drag begins. |
+| `onEnd` | `Action<DragDropEffects>?`| `null` | Callback when drag ends with result. |
 
-```csharp
-new Canvas()
-    .Children(
-        new Border()
-            .W(100).H(50).Background(Brushes.SlateBlue)
-            .LiveDraggable() // Each node can be dragged independently and concurrently
-            .Left(50).Top(50), 
-            
-        new Border()
-            .W(100).H(50).Background(Brushes.DarkCyan)
-            .LiveDraggable() 
-            .Left(200).Top(100)
-    )
-```
-
-### B. Constraints and Synchronization (OnMove)
-Sometimes you need to restrict movement, such as "snap to grid" or "sync resizing."
-
-```csharp
-.LiveDraggable(onMove: delta => {
-    // delta is the total offset since the pointer was pressed
-    // Implement snapping:
-    var snappedX = Math.Round(delta.X / 20) * 20;
-    // ... logic to apply snapped values
-});
-```
+### `LiveDraggable<T>`
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `handle` | `Control?` | `null` | Optional trigger element. |
+| `enable` | `State<bool>?` | `null` | Reactive toggle for dragging. |
+| `animateBack` | `bool` | `true` | Snap back animation on release. |
+| `ghostTransform`| `Func<T, Control>?` | `null` | Create a reactive top-layer UI overlay. |
+| `constrain` | `Func<Point, Point>?` | `null` | Custom math logic for position (e.g., Grid). |
+| `constrainTo` | `Control?` | `null` | Constraint container (e.g., Parent Border). |
+| `boundaryMode` | `LiveDragBoundaryMode`| `Clamp` | `Clamp` (block) or `Clip` (visual cut-off). |
+| `onStart` | `Action?` | `null` | Callback when drag begins. |
+| `onEnd` | `Action?` | `null` | Callback when drag ends. |
+| `onMove` | `Action<Point>?` | `null` | Real-time offset (Delta) callback. |
 
 ---
 
-## 4. Troubleshooting
+## 7. Tips for Professional UIs
 
-### Ghost image frozen or missing?
-*   **Cause 1**: Mouse entered an area where `AllowDrop = true` is not set.
-*   **Fix**: Svelonia has a built-in "Global Keep-alive" mechanism, but ensure your `TopLevel` (Window) is capable of receiving events.
-*   **Cause 2**: You removed the original object in the `onStart` callback.
-*   **Fix**: The snapshot is taken right after `onStart`. If you remove the object physically from the tree in `onStart`, the snapshot will be empty. Use `visualMode: DragVisualMode.Move` to hide it visually instead of deleting it.
-
-### Drag handle not working?
-If you specified a `handle` parameter, ensure that the handle control has `IsHitTestVisible` set to `true` (default) and is not obscured by a higher transparent layer.
-
----
-
-## 5. API Reference
-
-### `Draggable` Parameters
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `data` | `object` | **Required**. The payload to transfer (String, Files, or any Object). |
-| `effect` | `DragDropEffects` | Allowed operations (Copy, Move, Link). |
-| `handle` | `Control` | Optional child control to act as the drag grip. |
-| `enable` | `State<bool>` | Reactive state to toggle dragging capability. |
-| `visualMode` | `DragVisualMode` | `Ghost` (dimmed source), `Move` (hidden source), or `None`. |
-| `ghostTransform` | `Func<Image, Control>` | **Pro**. Function to wrap or replace the auto-generated ghost image. Useful for adding borders, status bars, or animations. |
-| `onStart` | `Action` | Triggered when drag starts. |
-| `onDrag` | `Action<Point>` | **Pro**. Real-time global coordinate callback during drag. |
-| `onEnd` | `Action` | Triggered when drag ends (dropped or cancelled). |
-
-### `LiveDraggable` Parameters
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `enable` | `State<bool>` | Reactive state to toggle interaction. |
-| `onMove` | `Action<Point>` | Callback providing the total translation delta from the start point. |
-
-### Helper Methods
-| Method | Description |
-| :--- | :--- |
-| `.OnDrop(Action<DragEventArgs>)` | Configures a control as a valid drop target. |
-| `.OnDragEnter/Leave/Over` | Low-level event hooks for visual feedback. |
-| `.ManualMove(x, y)` | Manually updates the `RenderTransform` of a control (used for sync/live-drag). |
+1. **Clip vs. Clamp**: Use `Clamp` for objects that must stay within a zone (e.g., map icons). Use `Clip` for objects that belong to a scrollable area or list.
+2. **Transparent Hit-Testing**: Remember that `Brushes.Transparent` blocks mouse hits, while `null` (no background) allows them to pass through.
+3. **Ghost Performance**: Keep `Live Ghost` trees lightweight. Since they move every frame, heavy layouts inside the ghost may impact smoothness.

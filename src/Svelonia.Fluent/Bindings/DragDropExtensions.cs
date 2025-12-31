@@ -1,33 +1,37 @@
 using Avalonia;
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.VisualTree;
+using System;
 using System.Collections;
+using System.Threading.Tasks;
 
 namespace Svelonia.Fluent;
 
 public enum DragVisualMode
 {
-    None,       // No visual ghost
-    Ghost,      // Semi-transparent ghost (70%), source dimmed (50%)
-    Move        // Opaque ghost (100%), source hidden (0%) - simulates moving the object itself
+    None,       
+    Ghost,      
+    Move        
 }
 
 public static class DragDropExtensions
 {
+    private static Control? _lastDropTarget; 
+    private static Point? _lastGlobalDropPos;
+
     private class DragState
     {
         public Point StartPoint { get; set; }
-        public Point InitialMouseOffset { get; set; } // New: Offset from control top-left
+        public Point InitialMouseOffset { get; set; } 
         public bool IsPressed { get; set; }
     }
 
-    /// <summary>
-    /// Enables Drag and Drop support for the control.
-    /// </summary>
     public static T Draggable<T>(this T control, 
         object data, 
         DragDropEffects effect = DragDropEffects.Copy, 
@@ -36,9 +40,10 @@ public static class DragDropExtensions
         Svelonia.Core.State<bool>? enable = null,
         DragVisualMode visualMode = DragVisualMode.Ghost,
         Func<Image, Control>? ghostTransform = null,
+        bool animateBack = true, 
         Action? onStart = null,
         Action<Point>? onDrag = null,
-        Action? onEnd = null) 
+        Action<DragDropEffects>? onEnd = null) 
         where T : Control
     {
         var trigger = handle ?? control;
@@ -49,8 +54,11 @@ public static class DragDropExtensions
             if (enable != null && !enable.Value) return;
             if (e.GetCurrentPoint(trigger).Properties.IsLeftButtonPressed)
             {
+                // RESET GLOBAL STATE AT START OF INTERACTION
+                _lastDropTarget = null;
+                _lastGlobalDropPos = null;
+
                 state.StartPoint = e.GetPosition(trigger);
-                // Capture the exact offset within the control
                 state.InitialMouseOffset = e.GetPosition(control); 
                 state.IsPressed = true;
                 e.Handled = false; 
@@ -72,12 +80,10 @@ public static class DragDropExtensions
                 var dataObject = CreateDataObject(data, format);
                 onStart?.Invoke();
                 
-                // State tracking
                 var originalOpacity = control.Opacity;
                 var originalAllowDrop = control.GetValue(DragDrop.AllowDropProperty);
                 object? triggerOriginalAllowDrop = (trigger != control) ? trigger.GetValue(DragDrop.AllowDropProperty) : null;
 
-                // Force AllowDrop for continuous events
                 control.SetValue(DragDrop.AllowDropProperty, true);
                 if (trigger != control) trigger.SetValue(DragDrop.AllowDropProperty, true);
 
@@ -87,6 +93,7 @@ public static class DragDropExtensions
                 EventHandler<DragEventArgs>? catchAllHandler = null;
                 TopLevel? topLevel = TopLevel.GetTopLevel(control);
                 object? topLevelOriginalAllowDrop = null;
+                Point lastGhostPos = default;
 
                 if (visualMode != DragVisualMode.None && topLevel != null)
                 {
@@ -98,7 +105,6 @@ public static class DragDropExtensions
                         adornerLayer = AdornerLayer.GetAdornerLayer(control);
                         if (adornerLayer != null)
                         {
-                            // 1. Capture snapshot BEFORE hiding source
                             var bitmap = new RenderTargetBitmap(new PixelSize((int)control.Bounds.Width, (int)control.Bounds.Height), new Vector(96, 96));
                             bitmap.Render(control);
 
@@ -111,52 +117,74 @@ public static class DragDropExtensions
                                 IsHitTestVisible = false
                             };
 
-                            // 2. Wrap/Transform Ghost
                             ghostContainer = ghostTransform != null ? ghostTransform(ghostImage) : ghostImage;
                             ghostContainer.IsHitTestVisible = false;
 
-                            // 3. Hide/Dim source AFTER capture
                             if (onStart == null)
-                            {
                                 control.Opacity = (visualMode == DragVisualMode.Move) ? 0.0 : 0.5;
-                            }
 
-                            // 4. Initial positioning using saved offset
                             var currentPos = e.GetPosition(adornerLayer);
-                            Canvas.SetLeft(ghostContainer, currentPos.X - state.InitialMouseOffset.X);
-                            Canvas.SetTop(ghostContainer, currentPos.Y - state.InitialMouseOffset.Y);
+                            lastGhostPos = new Point(currentPos.X - state.InitialMouseOffset.X, currentPos.Y - state.InitialMouseOffset.Y);
+                            Canvas.SetLeft(ghostContainer, lastGhostPos.X);
+                            Canvas.SetTop(ghostContainer, lastGhostPos.Y);
                             adornerLayer.Children.Add(ghostContainer);
 
-                            // 5. Update loop
                             dragOverHandler = (sender, args) =>
                             {
                                 var pos = args.GetPosition(adornerLayer);
-                                Canvas.SetLeft(ghostContainer, pos.X - state.InitialMouseOffset.X);
-                                Canvas.SetTop(ghostContainer, pos.Y - state.InitialMouseOffset.Y);
+                                lastGhostPos = new Point(pos.X - state.InitialMouseOffset.X, pos.Y - state.InitialMouseOffset.Y);
+                                Canvas.SetLeft(ghostContainer, lastGhostPos.X);
+                                Canvas.SetTop(ghostContainer, lastGhostPos.Y);
                                 onDrag?.Invoke(args.GetPosition(topLevel));
                             };
                             topLevel.AddHandler(DragDrop.DragOverEvent, dragOverHandler, RoutingStrategies.Bubble, handledEventsToo: true);
 
+                            // Keep drag alive but DON'T mark as success automatically
                             catchAllHandler = (sender, args) =>
                             {
-                                if (!args.Handled) { args.DragEffects = effect; args.Handled = true; }
+                                if (!args.Handled) { args.DragEffects = effect; } 
                             };
                             topLevel.AddHandler(DragDrop.DragOverEvent, catchAllHandler, RoutingStrategies.Bubble);
                         }
                     }
-                    catch { /* Fallback */ }
+                    catch { }
                 }
 
+                DragDropEffects result = DragDropEffects.None;
                 try
                 {
 #pragma warning disable CS0618
-                    await DragDrop.DoDragDrop(e, dataObject, effect);
+                    result = await DragDrop.DoDragDrop(e, dataObject, effect);
 #pragma warning restore CS0618
                 }
                 finally
                 {
-                    // Cleanup
-                    control.Opacity = originalOpacity;
+                    // STRICT VALIDATION: Success only if result matches AND a recognized target was hit
+                    bool isRealSuccess = (result != DragDropEffects.None) && (_lastDropTarget != null);
+                    Console.WriteLine($"[Drag] Finished. OS Result: {result}, Target Hit: {_lastDropTarget?.GetType().Name ?? "None"}, Final Status: {(isRealSuccess ? "SUCCESS" : "RETURN")}");
+
+                    if (animateBack && ghostContainer != null && adornerLayer != null && topLevel != null)
+                    {
+                        Point targetPos;
+                        if (!isRealSuccess) 
+                        {
+                            targetPos = control.TranslatePoint(new Point(0, 0), adornerLayer) ?? new Point(0, 0);
+                        }
+                        else
+                        {
+                            // Precision Centered Landing
+                            var targetBounds = _lastDropTarget!.Bounds;
+                            var targetCenterLocal = new Point(targetBounds.Width / 2, targetBounds.Height / 2);
+                            var targetCenterGlobal = _lastDropTarget.TranslatePoint(targetCenterLocal, adornerLayer) ?? new Point(0, 0);
+                            targetPos = new Point(targetCenterGlobal.X - control.Bounds.Width / 2, targetCenterGlobal.Y - control.Bounds.Height / 2);
+                        }
+                        
+                        await AnimateGhost(ghostContainer, targetPos, fadeOut: isRealSuccess);
+                    }
+
+                    // Restore Source Opacity ONLY if we are NOT successfully moving away
+                    if (!isRealSuccess) control.Opacity = originalOpacity;
+                    
                     control.SetValue(DragDrop.AllowDropProperty, originalAllowDrop);
                     if (triggerOriginalAllowDrop != null && trigger != control) trigger.SetValue(DragDrop.AllowDropProperty, triggerOriginalAllowDrop);
                     
@@ -167,7 +195,7 @@ public static class DragDropExtensions
                     if (dragOverHandler != null && topLevel != null) topLevel.RemoveHandler(DragDrop.DragOverEvent, dragOverHandler);
                     if (catchAllHandler != null && topLevel != null) topLevel.RemoveHandler(DragDrop.DragOverEvent, catchAllHandler);
 
-                    onEnd?.Invoke();
+                    onEnd?.Invoke(isRealSuccess ? result : DragDropEffects.None); 
                 }
             }
         };
@@ -175,10 +203,30 @@ public static class DragDropExtensions
         return control;
     }
 
+    private static async Task AnimateGhost(Control ghost, Point end, bool fadeOut = false)
+    {
+        var duration = TimeSpan.FromMilliseconds(200);
+        var transitions = new Transitions
+        {
+            new DoubleTransition { Property = Canvas.LeftProperty, Duration = duration, Easing = new QuadraticEaseOut() },
+            new DoubleTransition { Property = Canvas.TopProperty, Duration = duration, Easing = new QuadraticEaseOut() }
+        };
+        if (fadeOut) transitions.Add(new DoubleTransition { Property = Visual.OpacityProperty, Duration = duration, Easing = new QuadraticEaseOut() });
+
+        ghost.Transitions = transitions;
+        Canvas.SetLeft(ghost, end.X);
+        Canvas.SetTop(ghost, end.Y);
+        if (fadeOut) ghost.Opacity = 0;
+        await Task.Delay(duration);
+    }
+
     public static T OnDrop<T>(this T control, Action<DragEventArgs> handler) where T : Control
     {
         DragDrop.SetAllowDrop(control, true);
-        control.AddHandler(DragDrop.DropEvent, (s, e) => handler(e));
+        control.AddHandler(DragDrop.DropEvent, (s, e) => {
+            _lastDropTarget = control; 
+            handler(e);
+        });
         return control;
     }
 

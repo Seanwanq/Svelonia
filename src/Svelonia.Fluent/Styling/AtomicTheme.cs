@@ -7,10 +7,10 @@ namespace Svelonia.Fluent;
 public static class AtomicTheme
 {
     /// <summary>
-    /// The base unit size for spacing (Padding/Margin). Default is 4.0.
-    /// Example: .P(4) means 4 * 4.0 = 16px.
+    /// The base unit size for spacing (Padding/Margin). Default is 1.0.
+    /// Example: .P(4) means 4 * 1.0 = 4px.
     /// </summary>
-    public static double UnitSize { get; set; } = 4.0;
+    public static double UnitSize { get; set; } = 1.0;
 
     /// <summary>
     /// Helper to calculate actual pixels.
