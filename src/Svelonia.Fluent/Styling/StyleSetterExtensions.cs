@@ -108,6 +108,11 @@ public static class StyleSetterExtensions
     public static Style Opacity(this Style style, double value) => style.Setter(Visual.OpacityProperty, value);
 
     /// <summary>
+    /// 
+    /// </summary>
+    public static Style Cursor(this Style style, Avalonia.Input.Cursor cursor) => style.Setter(Avalonia.Input.InputElement.CursorProperty, cursor);
+
+    /// <summary>
     /// Adds transitions to the style.
     /// </summary>
     public static Style Transitions(this Style style, params ITransition[] transitions)

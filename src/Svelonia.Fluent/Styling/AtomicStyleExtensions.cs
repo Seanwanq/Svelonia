@@ -89,22 +89,4 @@ public static class AtomicStyleExtensions
         var normal = new Thickness(uniform);
         return control.BorderThickness(normal, hover, pressed);
     }
-
-    /// <summary>
-    /// Width
-    /// </summary>
-    public static T W<T>(this T control, double value) where T : Control
-    {
-        control.Width = value;
-        return control;
-    }
-
-    /// <summary>
-    /// Height
-    /// </summary>
-    public static T H<T>(this T control, double value) where T : Control
-    {
-        control.Height = value;
-        return control;
-    }
 }

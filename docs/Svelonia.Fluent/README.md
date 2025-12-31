@@ -27,3 +27,6 @@
 
 5.  **[Advanced Topics](./Advanced.md)**
     Learn how to extend Svelonia to support third-party control libraries and custom components.
+
+6.  **[Drag & Drop](./DragDrop.md)**
+    Fluent API for system-level and live multi-touch drag and drop interactions.
