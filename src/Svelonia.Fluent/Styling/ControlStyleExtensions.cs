@@ -7,6 +7,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Data;
+using System.Reactive.Linq;
 using Svelonia.Core;
 
 namespace Svelonia.Fluent;
@@ -112,7 +113,11 @@ public static class ControlStyleExtensions
         else if (value is Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension dr)
         {
             if (dr.ResourceKey != null)
-                style.Setters.Add(new Setter(prop, control.GetResourceObservable(dr.ResourceKey).ToBinding()));
+            {
+                var observable = control.GetResourceObservable(dr.ResourceKey)
+                                        .Select(x => SveConverter.Convert(prop, x));
+                style.Setters.Add(new Setter(prop, observable.ToBinding()));
+            }
         }
         else
         {
