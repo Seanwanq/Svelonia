@@ -53,8 +53,14 @@ public override void Initialize()
 7.  **[Services](./Services.md)**
     Core abstractions like `IDialogService`.
 
-8.  **[Debugging & Hot Reload](./Debugging.md)**
-    Tools for monitoring state changes and hooking into the Hot Reload pipeline.
+8.  **[Debugging & Diagnostics](./Debugging.md)**
+    Tools for monitoring state changes.
 
-9.  **[AOT Support](./AOT.md)**
+9.  **[Testing Guide](./Testing.md)**
+    Writing ultra-fast unit tests for your UI logic and components.
+
+10. **[Hot Reload Workflow](./HotReload.md)**
+    Leveraging instant feedback development with `dotnet watch`.
+
+11. **[AOT Support](./AOT.md)**
     Ensuring your application is ready for Native AOT and high-performance trimming.

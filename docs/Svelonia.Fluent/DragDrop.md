@@ -38,9 +38,9 @@ new Border().OnDrop(e => {
     data: myModel,
     visualMode: DragVisualMode.Move, // Hides original during drag
     animateBack: true,               // Returns to start if dropped outside
-    ghostTransform: img => new StackPanel().Children(
+    ghostTransform: img => new StackPanel().SetChildren(
         img, 
-        new TextBlock().TextContent("Moving...").Foreground(Brushes.White)
+        new TextBlock().SetText("Moving...").Fg(Brushes.White)
     ),
     onStart: () => Console.WriteLine("Drag Started"),
     onEnd: result => {
@@ -55,7 +55,7 @@ new Border().OnDrop(e => {
 
 ### Basic Example
 ```csharp
-new Border().W(100).H(100).Background(Brushes.Blue)
+new Border().W(100).H(100).Bg(Brushes.Blue)
     .LiveDraggable(animateBack: true);
 ```
 
@@ -83,7 +83,7 @@ To create a professional feel, provide feedback when an item is hovered over a t
 var isOver = new State<bool>(false);
 
 new Border()
-    .Background(new Computed<IBrush>(() => isOver.Value ? Brushes.LightGreen : Brushes.White))
+    .Bg(new Computed<IBrush>(() => isOver.Value ? Brushes.LightGreen : Brushes.White))
     .OnDragEnter(e => isOver.Value = true)
     .OnDragLeave(e => isOver.Value = false)
     .OnDrop(e => {

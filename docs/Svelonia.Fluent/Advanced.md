@@ -43,13 +43,76 @@ Once the attribute is added, the Source Generator will automatically create the 
 
 ```csharp
 new ColorPicker()
-    .Color(Colors.Red)
+    .SetColor(Colors.Red)
     .OnColorChanged(e => { ... })
-    .Margin(10);
+    .SetMargin(10);
 ```
 
-### Notes
+## The "Escape Hatch": `.Set()`
 
-- The generated code is `internal`, meaning it is visible only within the project where you added the attribute.
-- The generator looks for classes that inherit from `Avalonia.AvaloniaObject`.
-- Generic types are currently skipped to simplify generation.
+If the Source Generator hasn't created a specific method for an Avalonia Property (e.g., a very new property or a complex generic one), you can use the universal `.Set()` extension. This ensures you never get stuck.
+
+```csharp
+using Avalonia.Controls;
+
+new MyCustomControl()
+    .Set(MyCustomControl.SomeObscureProperty, "Special Value")
+    .Set(Layoutable.MarginProperty, new Thickness(10)); // Manual setter
+```
+
+---
+
+## Native Avalonia Interop
+
+Svelonia is 100% compatible with standard Avalonia. You can mix and match.
+
+### 1. Using XAML-defined Controls
+If you have a control defined in XAML (e.g., `MyLegacyView.axaml`), just instantiate it and use it inside your Svelonia tree.
+
+```csharp
+new StackPanel().SetChildren(
+    new TextBlock().SetText("Svelonia Header"),
+    new MyLegacyView(), // Standard Avalonia XAML control
+    new Button().SetContent("Svelonia Footer")
+);
+```
+
+### 2. Embedding Svelonia in XAML
+Since a Svelonia `Component` is just a `UserControl`, you can reference it in XAML:
+
+```xml
+<Window xmlns:pages="clr-namespace:MyApp.Pages">
+    <pages:MySveloniaPage />
+</Window>
+```
+
+---
+
+## Template Drilling (Advanced)
+
+Some Avalonia controls (like `TextBox`) have complex internal structures. Svelonia's fluent API automatically attempts to find and apply styles to the correct internal parts (like `PART_ContentPresenter`).
+
+If you need to target a specific internal part manually, use the `.OnApplyTemplate` hook or define a local `Style`.
+
+```csharp
+new Button()
+    .OnHover(style => {
+        // Target the internal ContentPresenter directly
+        style.Setter(TemplatedControl.ForegroundProperty, Brushes.Yellow);
+    });
+```
+
+---
+
+## Performance: Large Lists (`Sve.Each`)
+
+When rendering hundreds of items, use the `key` parameter in `Sve.Each` to enable **Efficient Reconciliation**.
+
+```csharp
+// Without Key: The entire list is rebuilt when one item changes.
+// With Key: Svelonia only moves/updates the specific control for that ID.
+Sve.Each(myList, 
+    item => new TextBlock().SetText(item.Name), 
+    item => item.Id // The Key Selector
+);
+```

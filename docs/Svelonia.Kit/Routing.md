@@ -128,7 +128,7 @@ Router.Navigate("/search?q=svelonia&limit=5");
 
 // From UI (Fluent API)
 new Button()
-    .Content("Next Page")
+    .SetContent("Next Page")
     .OnClick(_ => Router.Navigate($"/search?q={Query}&limit={Limit}&page=2"));
 ```
 

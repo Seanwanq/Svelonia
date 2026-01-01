@@ -62,17 +62,17 @@ public class LoginPage : Page
     {
         _mediator = mediator;
 
-        Content = new StackPanel().Spacing(15).Children(
-            new TextBlock().Text("Welcome Back").FontSize(24),
+        Content = new StackPanel().SetSpacing(15).SetChildren(
+            new TextBlock().SetText("Welcome Back").SetFontSize(24),
             
-            new TextBox().BindText(_username).Watermark("Username"),
-            new TextBox().BindText(_password).Watermark("Password").PasswordChar('*'),
+            new TextBox().BindText(_username).SetWatermark("Username"),
+            new TextBox().BindText(_password).SetWatermark("Password").SetPasswordChar('*'),
 
             new Button()
-                .Content("Login")
+                .SetContent("Login")
                 .OnClick(OnLoginClick),
 
-            new TextBlock().BindTextContent(_status).Foreground(Tw.Red500)
+            new TextBlock().BindText(_status).Fg(Tw.Red500)
         );
     }
 

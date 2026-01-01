@@ -58,9 +58,9 @@ public class MainLayout : Layout
     {
         // 'Slot' is the content passed from the child page
         Content = new DockPanel()
-            .Children(
-                new Sidebar().Dock(Dock.Left),
-                new Navbar().Dock(Dock.Top),
+            .SetChildren(
+                new Sidebar().SetDock(Dock.Left),
+                new Navbar().SetDock(Dock.Top),
                 
                 // Place the slot content
                 Slot

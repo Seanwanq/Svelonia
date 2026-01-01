@@ -49,9 +49,9 @@ Task<UserProfile> LoadProfile() => apiClient.GetUserAsync();
 // Use a factory lambda to allow reloading
 var loader = new AwaitControl<UserProfile>(
     taskFactory: () => LoadProfile(),
-    loading: () => new TextBlock().Text("Loading..."),
+    loading: () => new TextBlock().SetText("Loading..."),
     then: (user) => new ProfileCard(user),
-    error: (ex) => new TextBlock().Text($"Error: {ex.Message}")
+    error: (ex) => new TextBlock().SetText($"Error: {ex.Message}")
 );
 
 // Trigger a refresh later

@@ -29,7 +29,7 @@ count.Value++;
 ### Binding to UI
 (See `Svelonia.Fluent` documentation for `Bind` syntax details)
 ```csharp
-new TextBlock().BindTextContent(count); // Updates automatically
+new TextBlock().BindText(count); // Updates automatically
 ```
 
 ---

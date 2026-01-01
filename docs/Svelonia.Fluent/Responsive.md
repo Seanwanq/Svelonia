@@ -46,8 +46,8 @@ var fontSize = MediaQuery.Select(
 );
 
 new TextBlock()
-    .FontSize(fontSize)
-    .Text("Responsive Text");
+    .BindFontSize(fontSize)
+    .SetText("Responsive Text");
 ```
 
 ### Boolean Flags
@@ -72,17 +72,17 @@ Content = new Computed<Control>(() =>
     if (MediaQuery.Width.Value > 600)
     {
         // Desktop: Sidebar + Content
-        return new Grid().Cols("250, *").Children(
-            new Border().Col(0).Child(new TextBlock().Text("Sidebar")),
-            new Border().Col(1).Child(Slot) // Display content
+        return new Grid().SetCols("250, *").SetChildren(
+            new Border().SetCol(0).SetChild(new TextBlock().SetText("Sidebar")),
+            new Border().SetCol(1).SetChild(Slot) // Display content
         );
     }
     else
     {
         // Mobile: Content + Bottom Nav
-        return new Grid().Rows("*, Auto").Children(
-            new Border().Row(0).Child(Slot),
-            new Border().Row(1).Child(new TextBlock().Text("Bottom Nav"))
+        return new Grid().SetRows("*, Auto").SetChildren(
+            new Border().SetRow(0).SetChild(Slot),
+            new Border().SetRow(1).SetChild(new TextBlock().SetText("Bottom Nav"))
         );
     }
 });
@@ -97,7 +97,7 @@ var layout = MediaQuery.OnOrientation<StackOrientation>(
     landscape: StackOrientation.Horizontal
 );
 
-new StackPanel().Orientation(layout);
+new StackPanel().BindOrientation(layout);
 ```
 
 ## Platform Detection
@@ -112,7 +112,7 @@ var fontFamily = Platform.Select(
     @default: "Arial"
 );
 
-new TextBlock().FontFamily(fontFamily);
+new TextBlock().BindFontFamily(fontFamily);
 ```
 
 You can also use boolean flags: `Platform.IsWindows`, `Platform.IsAndroid`, etc.
