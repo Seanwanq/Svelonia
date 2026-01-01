@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Svelonia.Fluent;
-using Svelonia.Generated;
 
 namespace Svelonia.DevTools;
 
@@ -21,29 +20,29 @@ public class DevToolsWindow : Window
         Height = 400;
 
         Content = new Grid()
-            .Rows("Auto,*")
-            .Children(
+            .SetRows("Auto,*")
+            .SetChildren(
                 // Header
-                new Border().Background(Brushes.LightGray).Padding(10).Child(
-                    new TextBlock().Text("State Log").FontWeight(FontWeight.Bold)
-                ).Row(0),
+                new Border().Bg(Brushes.LightGray).SetPadding(10).SetChild(
+                    new TextBlock().SetText("State Log").SetFontWeight(FontWeight.Bold)
+                ).SetRow(0),
 
                 // Log List
-                new ScrollViewer().Content(
+                new ScrollViewer().SetContent(
                     Core.Sve.Each(DevToolsContext.Instance.Logs, log =>
                         new Border()
-                            .BorderThickness(0, 0, 0, 1)
-                            .BorderBrush(Brushes.LightGray)
-                            .Padding(5)
-                            .Child(
-                                new StackPanel().Orientation(Orientation.Horizontal).Spacing(10).Children(
-                                    new TextBlock().Text(log.Timestamp.ToString("HH:mm:ss.fff")).Foreground(Brushes.Gray).FontSize(12),
-                                    new TextBlock().Text(log.Source).FontWeight(FontWeight.SemiBold).Width(150),
-                                    new TextBlock().Text(log.Value).TextWrapping(TextWrapping.Wrap)
+                            .SetBorderThickness(0, 0, 0, 1)
+                            .SetBorderBrush(Brushes.LightGray)
+                            .SetPadding(5)
+                            .SetChild(
+                                new StackPanel().SetOrientation(Orientation.Horizontal).SetSpacing(10).SetChildren(
+                                    new TextBlock().SetText(log.Timestamp.ToString("HH:mm:ss.fff")).SetForeground(Brushes.Gray).SetFontSize(12),
+                                    new TextBlock().SetText(log.Source).SetFontWeight(FontWeight.SemiBold).SetWidth(150),
+                                    new TextBlock().SetText(log.Value).SetTextWrapping(TextWrapping.Wrap)
                                 )
                             )
                     )
-                ).Row(1)
+                ).SetRow(1)
             );
     }
 }

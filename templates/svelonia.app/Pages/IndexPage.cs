@@ -3,7 +3,7 @@ using Avalonia.Layout;
 using Svelonia.Kit;
 using Svelonia.Core;
 using Svelonia.Fluent;
-using Svelonia.Generated;
+
 
 namespace SveloniaApp.Pages;
 
@@ -14,46 +14,46 @@ public class IndexPage : Page
     public IndexPage()
     {
         Content = new Border()
-            .Background(Sve.Res("BackgroundColor"))
-            .Child(
+            .Bg(Sve.Res("BackgroundColor"))
+            .SetChild(
                 new StackPanel()
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .Spacing(30)
-                    .Children(
+                    .SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetSpacing(30)
+                    .SetChildren(
                         new TextBlock()
-                            .FontSize(32)
-                            .FontWeight(Avalonia.Media.FontWeight.Black)
-                            .Foreground(Sve.Res("TextColor"))
-                            .Text("Welcome to Svelonia")
-                            .HorizontalAlignment(HorizontalAlignment.Center),
+                            .SetFontSize(32)
+                            .SetFontWeight(Avalonia.Media.FontWeight.Black)
+                            .Fg(Sve.Res("TextColor"))
+                            .SetText("Welcome to Svelonia")
+                            .SetHorizontalAlignment(HorizontalAlignment.Center),
 
                         new Border()
-                            .Width(400)
-                            .Padding(40)
-                            .CornerRadius(15)
-                            .Background(Sve.Res("PaperBg"))
-                            .BoxShadow(Sve.Res("PaperShadow"))
-                            .HorizontalAlignment(HorizontalAlignment.Center)
-                            .Child(
+                            .SetWidth(400)
+                            .SetPadding(40)
+                            .SetCornerRadius(15)
+                            .Bg(Sve.Res("PaperBg"))
+                            .SetBoxShadow(Sve.Res("PaperShadow"))
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetChild(
                                 new StackPanel()
-                                    .Spacing(20)
-                                    .Children(
+                                    .SetSpacing(20)
+                                    .SetChildren(
                                         new TextBlock()
-                                            .Text("Start building something beautiful.")
-                                            .Foreground(Sve.Res("TextColor"))
-                                            .HorizontalAlignment(HorizontalAlignment.Center),
+                                            .SetText("Start building something beautiful.")
+                                            .Fg(Sve.Res("TextColor"))
+                                            .SetHorizontalAlignment(HorizontalAlignment.Center),
 
                                         new Border()
-                                            .HorizontalAlignment(HorizontalAlignment.Center)
-                                            .BoxShadow(Sve.Res("ButtonShadow"))
-                                            .CornerRadius(10)
-                                            .Child(
+                                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                                            .SetBoxShadow(Sve.Res("ButtonShadow"))
+                                            .SetCornerRadius(10)
+                                            .SetChild(
                                                 new Button()
-                                                    .Content("Explore Demo")
-                                                    .Padding(20, 10)
-                                                    .Background(Sve.Res("PrimaryColor"))
-                                                    .Foreground(Avalonia.Media.Brushes.White)
-                                                    .CornerRadius(10)
+                                                    .SetContent("Explore Demo")
+                                                    .SetPadding(20, 10)
+                                                    .Bg(Sve.Res("PrimaryColor"))
+                                                    .Fg(Avalonia.Media.Brushes.White)
+                                                    .SetCornerRadius(10)
                                                     .OnClick(_ => App.Router.Navigate("/home"))
                                             )
                                     )

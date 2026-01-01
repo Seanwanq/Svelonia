@@ -4,16 +4,23 @@
 
 Svelonia provides a fluent API for styling controls, including handling visual states (Hover, Focus, Pressed) and theme resources.
 
-## Basic Properties
+## Atomic & Basic Properties
 
-Most styling properties are available as extension methods. Svelonia includes an intelligent conversion layer (`SveConverter`) that simplifies passing values.
+Most styling properties are available as extension methods. Svelonia provides highly optimized "Atomic" shorthands for the most common properties, alongside generated `SetX` methods for everything else.
 
 ```csharp
 new Border()
-    .Background("#ff0000") // Auto-converts string to SolidColorBrush
-    .CornerRadius(8)       // Auto-converts int to CornerRadius
-    .Padding(10.5);        // Auto-converts double to Thickness
+    .Bg("#ff0000")          // Shorthand for Background (Atomic)
+    .SetCornerRadius(8)     // Generated Setter
+    .SetPadding(10.5);      // Generated Setter
 ```
+
+### 💡 Atomic Helpers (Shorthands)
+For the most frequently used styles, use these short, optimized helpers:
+- `.Bg(brush, ...)`: Background
+- `.Fg(brush, ...)`: Foreground
+- `.Rounded(units)`: CornerRadius
+- `.P(uniform)` / `.P(h, v)`: Padding
 
 ## State-Based Styling
 
@@ -23,34 +30,34 @@ You can define styles for different states inline. These also support `State<T>`
 var isSelected = new State<bool>(false);
 
 new Button()
-    .Background(
+    .Bg(
         normal: isSelected.Select(s => s ? Brushes.Gold : Brushes.Gray),
         hover: Brushes.LightBlue
     );
 ```
 
-Supported states: `normal`, `hover`, `pressed`, `disabled`, `focus`.
+Supported states in `Bg`, `Fg`, and other style helpers: `normal`, `hover`, `pressed`, `disabled`, `focus`.
 
 ## Skeuomorphic Effects (BoxShadow)
 
-`BoxShadow` is supported on `Border` controls and can be themed.
+`SetBoxShadow` is supported on `Border` controls and can be themed.
 
 ```csharp
 new Border()
-    .BoxShadow(Sve.Res("ButtonShadow"))
-    .CornerRadius(10)
-    .Child(...);
+    .SetBoxShadow(Sve.Res("ButtonShadow"))
+    .SetCornerRadius(10)
+    .SetChild(...);
 ```
 
 ## Lightweight Styling (Theme Resources)
 
-For complex controls like `TextBox` or `Button` in the Fluent Theme, simple property overrides (like `BorderThickness`) might be ignored because the internal template binds to specific Theme Resources. Svelonia automatically maps these properties to the correct internal resource keys.
+For complex controls like `TextBox` or `Button` in the Fluent Theme, simple property overrides (like `SetBorderThickness`) might be ignored because the internal template binds to specific Theme Resources. Svelonia automatically maps these properties to the correct internal resource keys.
 
 ```csharp
 // This automatically sets internal resource overrides for the TextBox
 new TextBox()
-    .BorderThickness(0, focus: 0)
-    .Background(Brushes.Transparent);
+    .SetBorderThickness(0, hover: 0, pressed: 0)
+    .Bg(Brushes.Transparent);
 ```
 
 ### 💡 Implicit Conversion
@@ -59,10 +66,10 @@ Thanks to `SveConverter`, you no longer need to manually wrap values like `new T
 
 ```csharp
 // ✅ Safe - Auto-converts to Thickness
-.BorderThickness(0) 
+.SetBorderThickness(0) 
 
 // ✅ Safe - Auto-converts to CornerRadius
-.CornerRadius(8)
+.SetCornerRadius(8)
 ```
 
 ## Semantic Design System (G Class)
@@ -74,12 +81,12 @@ using Svelonia.Fluent;
 
 // Use semantic presets
 new StackPanel()
-    .Spacing(G.Medium)    // 16.0
-    .Margin(G.Large);     // 24.0
+    .SetSpacing(G.Medium)    // 16.0
+    .SetMargin(G.Large);     // 24.0
 
 new Border()
-    .Rounded(G.RadiusSmall) // 4.0
-    .Padding(G.Small);      // 8.0
+    .Rounded(G.RadiusSmall)  // Atomic helper for CornerRadius
+    .SetPadding(G.Small);    // Generated Setter
 ```
 
 ### Configuration

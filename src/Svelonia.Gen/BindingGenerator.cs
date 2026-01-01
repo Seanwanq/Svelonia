@@ -33,7 +33,7 @@ public class BindingGenerator : IIncrementalGenerator
         sb.AppendLine("using System.Collections.Generic;");
         sb.AppendLine("using System.Linq;");
         sb.AppendLine();
-        sb.AppendLine("namespace Svelonia.Generated");
+        sb.AppendLine("namespace Svelonia.Fluent");
         sb.AppendLine("{");
 
         // 1. Generate Static/Manual Helpers in a separate class
@@ -191,442 +191,877 @@ public class BindingGenerator : IIncrementalGenerator
         }
         ");
 
-        // Thickness Helpers (Margin - Layoutable)
-        sb.AppendLine(@"
-        public static T Margin<T>(this T control, double uniform) where T : Avalonia.Layout.Layoutable
-        {
-            control.Margin = new Avalonia.Thickness(uniform);
-            return control;
-        }
-        public static T Margin<T>(this T control, double horizontal, double vertical) where T : Avalonia.Layout.Layoutable
-        {
-            control.Margin = new Avalonia.Thickness(horizontal, vertical);
-            return control;
-        }
-        public static T Margin<T>(this T control, double left, double top, double right, double bottom) where T : Avalonia.Layout.Layoutable
-        {
-            control.Margin = new Avalonia.Thickness(left, top, right, bottom);
-            return control;
-        }
-        ");
+                // Thickness Helpers (Margin - Layoutable)
 
-        // BorderThickness (Border)
-        sb.AppendLine(@"
-        public static T BorderThickness<T>(this T control, double uniform) where T : Avalonia.Controls.Border
-        {
-            control.BorderThickness = new Avalonia.Thickness(uniform);
-            return control;
-        }
-        public static T BorderThickness<T>(this T control, double horizontal, double vertical) where T : Avalonia.Controls.Border
-        {
-            control.BorderThickness = new Avalonia.Thickness(horizontal, vertical);
-            return control;
-        }
-        public static T BorderThickness<T>(this T control, double left, double top, double right, double bottom) where T : Avalonia.Controls.Border
-        {
-            control.BorderThickness = new Avalonia.Thickness(left, top, right, bottom);
-            return control;
-        }
-        ");
+                sb.AppendLine(@"
 
-        // CornerRadius (Border)
-        sb.AppendLine(@"
-        public static T CornerRadius<T>(this T control, double uniform) where T : Avalonia.Controls.Border
-        {
-            control.CornerRadius = new Avalonia.CornerRadius(uniform);
-            return control;
-        }
-        ");
+                public static T SetMargin<T>(this T control, double uniform) where T : Avalonia.Layout.Layoutable
 
-        // Grid Helpers
-        sb.AppendLine(@"
-        public static T Cols<T>(this T control, string definitions) where T : Grid
-        {
-            control.ColumnDefinitions = ColumnDefinitions.Parse(definitions);
-            return control;
-        }
-        public static T Rows<T>(this T control, string definitions) where T : Grid
-        {
-            control.RowDefinitions = RowDefinitions.Parse(definitions);
-            return control;
-        }
-        
-        // Attached Properties
-        public static T Col<T>(this T control, int value) where T : Control
-        {
-            Grid.SetColumn(control, value);
-            return control;
-        }
-        public static T Row<T>(this T control, int value) where T : Control
-        {
-            Grid.SetRow(control, value);
-            return control;
-        }
-        public static T ColSpan<T>(this T control, int value) where T : Control
-        {
-            Grid.SetColumnSpan(control, value);
-            return control;
-        }
-        public static T RowSpan<T>(this T control, int value) where T : Control
-        {
-            Grid.SetRowSpan(control, value);
-            return control;
-        }
-        public static T Dock<T>(this T control, Avalonia.Controls.Dock dock) where T : Control
-        {
-            DockPanel.SetDock(control, dock);
-            return control;
-        }
-
-        // Panel Children
-        public static T Children<T>(this T control, params Control[] children) where T : Panel
-        {
-            foreach (var child in children) child.DetachFromParent();
-            control.Children.AddRange(children);
-            return control;
-        }
-
-        public static T Children<T>(this T control, State<Control> childState) where T : Panel
-        {
-            Control? lastControl = null;
-            void Handler(Control v)
-            {
-                if (lastControl != null) control.Children.Remove(lastControl);
-                lastControl = v;
-                if (v != null) 
                 {
-                    v.DetachFromParent();
-                    control.Children.Add(v);
+
+                    control.Margin = new Avalonia.Thickness(uniform);
+
+                    return control;
+
                 }
-            }
-            
-            lastControl = childState.Value;
-            if (lastControl != null) 
-            {
-                lastControl.DetachFromParent();
-                control.Children.Add(lastControl);
-            }
 
-            if (control is Control c)
-            {
-                c.AttachedToVisualTree += (s, e) => { childState.OnChange += Handler; };
-                c.DetachedFromVisualTree += (s, e) => { childState.OnChange -= Handler; };
-                if (c.IsLoaded) childState.OnChange += Handler;
-            }
-            return control;
-        }
+                public static T SetMargin<T>(this T control, double horizontal, double vertical) where T : Avalonia.Layout.Layoutable
 
-        public static T Children<T>(this T control, State<IEnumerable<Control>> childrenState) where T : Panel
-        {
-            List<Control> lastChildren = new();
-            void Handler(IEnumerable<Control> v)
-            {
-                foreach (var child in lastChildren) control.Children.Remove(child);
-                lastChildren = v.ToList();
-                foreach (var child in lastChildren) child.DetachFromParent();
-                control.Children.AddRange(lastChildren);
-            }
+                {
 
-            lastChildren = childrenState.Value.ToList();
-            foreach (var child in lastChildren) child.DetachFromParent();
-            control.Children.AddRange(lastChildren);
+                    control.Margin = new Avalonia.Thickness(horizontal, vertical);
 
-            if (control is Control c)
-            {
-                c.AttachedToVisualTree += (s, e) => { childrenState.OnChange += Handler; };
-                c.DetachedFromVisualTree += (s, e) => { childrenState.OnChange -= Handler; };
-                if (c.IsLoaded) childrenState.OnChange += Handler;
-            }
-            return control;
-        }
-        ");
-        sb.AppendLine("    }"); // End FluentHelpers
+                    return control;
 
-        // Separate Class for Decorator Helpers (Padding)
-        sb.AppendLine($"    internal static class FluentHelpers_Decorator_{assemblyName}");
-        sb.AppendLine("    {");
-        sb.AppendLine(@"
-        public static T Padding<T>(this T control, double uniform) where T : Avalonia.Controls.Decorator
-        {
-            control.Padding = new Avalonia.Thickness(uniform);
-            return control;
-        }
-        public static T Padding<T>(this T control, double horizontal, double vertical) where T : Avalonia.Controls.Decorator
-        {
-            control.Padding = new Avalonia.Thickness(horizontal, vertical);
-            return control;
-        }
-        public static T Padding<T>(this T control, double left, double top, double right, double bottom) where T : Avalonia.Controls.Decorator
-        {
-            control.Padding = new Avalonia.Thickness(left, top, right, bottom);
-            return control;
-        }
-        // Child Helper
-        public static T Child<T>(this T control, Control child) where T : Decorator
-        {
-            child.DetachFromParent();
-            control.Child = child;
-            return control;
-        }
-        public static T Child<T>(this T control, State<Control> childState) where T : Decorator
-        {
-             void Handler(Control v) 
-             {
-                 v?.DetachFromParent();
-                 control.Child = v;
-             }
-             if (childState.Value != null) childState.Value.DetachFromParent();
-             control.Child = childState.Value;
-             if(control is Control c)
-             {
-                 c.AttachedToVisualTree += (s,e) => { control.Child = childState.Value; childState.OnChange += Handler; };
-                 c.DetachedFromVisualTree += (s,e) => { childState.OnChange -= Handler; };
-                 if(c.IsLoaded) childState.OnChange += Handler;
-             }
-             return control;
-        }
-        ");
-        sb.AppendLine("    }");
+                }
 
-        // Separate Class for TemplatedControl Helpers (Padding)
-        sb.AppendLine($"    internal static class FluentHelpers_TemplatedControl_{assemblyName}");
-        sb.AppendLine("    {");
-        sb.AppendLine(@"
-        public static T Padding<T>(this T control, double uniform) where T : Avalonia.Controls.Primitives.TemplatedControl
-        {
-            control.Padding = new Avalonia.Thickness(uniform);
-            return control;
-        }
-        public static T Padding<T>(this T control, double horizontal, double vertical) where T : Avalonia.Controls.Primitives.TemplatedControl
-        {
-            control.Padding = new Avalonia.Thickness(horizontal, vertical);
-            return control;
-        }
-        public static T Padding<T>(this T control, double left, double top, double right, double bottom) where T : Avalonia.Controls.Primitives.TemplatedControl
-        {
-            control.Padding = new Avalonia.Thickness(left, top, right, bottom);
-            return control;
-        }
-        ");
-        sb.AppendLine("    }");
-    }
+                public static T SetMargin<T>(this T control, double left, double top, double right, double bottom) where T : Avalonia.Layout.Layoutable
 
-    private void GenerateExtensionsForType(StringBuilder sb, INamedTypeSymbol type, string assemblyName)
-    {
-        var typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var safeName = type.ToDisplayString().Replace(".", "_").Replace("<", "").Replace(">", "");
+                {
 
-        sb.AppendLine($"    internal static class FluentExtensions_{safeName}_{assemblyName}");
-        sb.AppendLine("    {");
+                    control.Margin = new Avalonia.Thickness(left, top, right, bottom);
 
-        // Get public properties declared IN THIS TYPE ONLY
-        var props = type.GetMembers().OfType<IPropertySymbol>()
-            .Where(p => !p.IsStatic &&
-                        !p.IsReadOnly &&
-                        !p.IsIndexer &&
-                        p.DeclaredAccessibility == Accessibility.Public &&
-                        p.SetMethod != null && p.SetMethod.DeclaredAccessibility == Accessibility.Public && // Ensure setter is public
-                        SymbolEqualityComparer.Default.Equals(p.ContainingType, type));
+                    return control;
 
-        foreach (var prop in props)
-        {
-            if (prop.GetAttributes().Any(a => a.AttributeClass?.Name == "ObsoleteAttribute")) continue;
-            // FontSize is allowed now
-            bool isControl = InheritsFrom(type, "Control") || type.Name == "Control";
-            GeneratePropertyExtension(sb, typeName, prop, isControl);
-        }
+                }
 
-        sb.AppendLine("    }");
-    }
+                ");
 
-        private void GeneratePropertyExtension(StringBuilder sb, string typeName, IPropertySymbol prop, bool isControl)
+        
 
-        {
+                // BorderThickness (Border)
 
-            var propName = prop.Name;
+                sb.AppendLine(@"
 
-            var propType = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                public static T SetBorderThickness<T>(this T control, double uniform) where T : Avalonia.Controls.Border
 
-    
+                {
 
-            // Check Avalonia Property
+                    control.BorderThickness = new Avalonia.Thickness(uniform);
 
-            var avaloniaPropField = prop.ContainingType.GetMembers($"{propName}Property").FirstOrDefault();
+                    return control;
 
-            bool isAvaloniaProp = avaloniaPropField != null && avaloniaPropField.IsStatic;
+                }
 
-    
+                public static T SetBorderThickness<T>(this T control, double horizontal, double vertical) where T : Avalonia.Controls.Border
 
-            // Determine parameter type for hover/pressed (nullable version of propType)
+                {
 
-            string paramType = propType;
+                    control.BorderThickness = new Avalonia.Thickness(horizontal, vertical);
 
-            if (prop.Type.IsValueType)
+                    return control;
 
-            {
+                }
 
-                if (prop.Type.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T)
+                public static T SetBorderThickness<T>(this T control, double left, double top, double right, double bottom) where T : Avalonia.Controls.Border
 
-                    paramType += "?";
+                {
 
-            }
+                    control.BorderThickness = new Avalonia.Thickness(left, top, right, bottom);
 
-            else
+                    return control;
 
-            {
+                }
 
-                if (!propType.EndsWith("?"))
+                ");
 
-                    paramType += "?";
+        
 
-            }
+                // CornerRadius (Border)
 
-    
+                sb.AppendLine(@"
 
-                        // Skip manual helpers and conflicting properties
+                public static T SetCornerRadius<T>(this T control, double uniform) where T : Avalonia.Controls.Border
 
-    
+                {
 
-                        if ((propName == "Child" && typeName.EndsWith("Decorator")) ||
+                    control.CornerRadius = new Avalonia.CornerRadius(uniform);
 
-    
+                    return control;
 
-                            (propName == "Children" && typeName.EndsWith("Panel")) ||
+                }
 
-    
+                ");
 
-                            (propName == "ColumnDefinitions" && typeName.EndsWith("Grid")) ||
+        
 
-    
+                // Grid Helpers
 
-                            (propName == "RowDefinitions" && typeName.EndsWith("Grid")) ||
+                sb.AppendLine(@"
 
-    
+                public static T SetCols<T>(this T control, string definitions) where T : Grid
 
-                            (propName == "Background") ||
-                            
-                            (propName == "BoxShadow"))
+                {
 
-    
+                    control.ColumnDefinitions = ColumnDefinitions.Parse(definitions);
+
+                    return control;
+
+                }
+
+                public static T SetRows<T>(this T control, string definitions) where T : Grid
+
+                {
+
+                    control.RowDefinitions = RowDefinitions.Parse(definitions);
+
+                    return control;
+
+                }
+
+                
+
+                // Attached Properties
+
+                public static T SetCol<T>(this T control, int value) where T : Control
+
+                {
+
+                    Grid.SetColumn(control, value);
+
+                    return control;
+
+                }
+
+                public static T SetRow<T>(this T control, int value) where T : Control
+
+                {
+
+                    Grid.SetRow(control, value);
+
+                    return control;
+
+                }
+
+                public static T SetColSpan<T>(this T control, int value) where T : Control
+
+                {
+
+                    Grid.SetColumnSpan(control, value);
+
+                    return control;
+
+                }
+
+                public static T SetRowSpan<T>(this T control, int value) where T : Control
+
+                {
+
+                    Grid.SetRowSpan(control, value);
+
+                    return control;
+
+                }
+
+                public static T SetDock<T>(this T control, Avalonia.Controls.Dock dock) where T : Control
+
+                {
+
+                    DockPanel.SetDock(control, dock);
+
+                    return control;
+
+                }
+
+        
+
+                // Panel Children
+
+                public static T SetChildren<T>(this T control, params Control[] children) where T : Panel
+
+                {
+
+                    foreach (var child in children) child.DetachFromParent();
+
+                    control.Children.AddRange(children);
+
+                    return control;
+
+                }
+
+        
+
+                public static T BindChildren<T>(this T control, State<Control> childState) where T : Panel
+
+                {
+
+                    Control? lastControl = null;
+
+                    void Handler(Control v)
+
+                    {
+
+                        if (lastControl != null) control.Children.Remove(lastControl);
+
+                        lastControl = v;
+
+                        if (v != null) 
 
                         {
 
-    
+                            v.DetachFromParent();
 
-                            return;
-
-    
+                            control.Children.Add(v);
 
                         }
 
-    
+                    }
 
-            // Value Setter
+                    
 
-            sb.AppendLine($"        public static T {propName}<T>(this T control, {propType} value, {paramType} hover = default, {paramType} pressed = default) where T : {typeName}");
+                    lastControl = childState.Value;
 
-            sb.AppendLine("        {");
+                    if (lastControl != null) 
 
-            sb.AppendLine("            if (hover == null && pressed == null)");
+                    {
 
-            sb.AppendLine("            {");
+                        lastControl.DetachFromParent();
 
-            sb.AppendLine($"                if ((object?)value is Avalonia.Controls.Control ctrl) ctrl.DetachFromParent();");
+                        control.Children.Add(lastControl);
 
-            sb.AppendLine($"                control.{propName} = value;");
+                    }
 
-            sb.AppendLine("            }");
+        
 
-            sb.AppendLine("            else");
+                    if (control is Control c)
 
-            sb.AppendLine("            {");
+                    {
 
-            if (isAvaloniaProp && isControl)
+                        c.AttachedToVisualTree += (s, e) => { childState.OnChange += Handler; };
 
-            {
+                        c.DetachedFromVisualTree += (s, e) => { childState.OnChange -= Handler; };
 
-                 sb.AppendLine($"                Svelonia.Fluent.ControlStyleExtensions.SetStateProperty(control, {typeName}.{propName}Property, value, hover, pressed);");
+                        if (c.IsLoaded) childState.OnChange += Handler;
+
+                    }
+
+                    return control;
+
+                }
+
+        
+
+                public static T BindChildren<T>(this T control, State<IEnumerable<Control>> childrenState) where T : Panel
+
+                {
+
+                    List<Control> lastChildren = new();
+
+                    void Handler(IEnumerable<Control> v)
+
+                    {
+
+                        foreach (var child in lastChildren) control.Children.Remove(child);
+
+                        lastChildren = v.ToList();
+
+                        foreach (var child in lastChildren) child.DetachFromParent();
+
+                        control.Children.AddRange(lastChildren);
+
+                    }
+
+        
+
+                    lastChildren = childrenState.Value.ToList();
+
+                    foreach (var child in lastChildren) child.DetachFromParent();
+
+                    control.Children.AddRange(lastChildren);
+
+        
+
+                    if (control is Control c)
+
+                    {
+
+                        c.AttachedToVisualTree += (s, e) => { childrenState.OnChange += Handler; };
+
+                        c.DetachedFromVisualTree += (s, e) => { childrenState.OnChange -= Handler; };
+
+                        if (c.IsLoaded) childrenState.OnChange += Handler;
+
+                    }
+
+                    return control;
+
+                }
+
+                ");
+
+                sb.AppendLine("    }"); // End FluentHelpers
+
+        
+
+                // Separate Class for Decorator Helpers (Padding)
+
+                sb.AppendLine($"    internal static class FluentHelpers_Decorator_{assemblyName}");
+
+                sb.AppendLine("    {");
+
+                sb.AppendLine(@"
+
+                public static T SetPadding<T>(this T control, double uniform) where T : Avalonia.Controls.Decorator
+
+                {
+
+                    control.Padding = new Avalonia.Thickness(uniform);
+
+                    return control;
+
+                }
+
+                public static T SetPadding<T>(this T control, double horizontal, double vertical) where T : Avalonia.Controls.Decorator
+
+                {
+
+                    control.Padding = new Avalonia.Thickness(horizontal, vertical);
+
+                    return control;
+
+                }
+
+                public static T SetPadding<T>(this T control, double left, double top, double right, double bottom) where T : Avalonia.Controls.Decorator
+
+                {
+
+                    control.Padding = new Avalonia.Thickness(left, top, right, bottom);
+
+                    return control;
+
+                }
+
+                // Child Helper
+
+                public static T SetChild<T>(this T control, Control child) where T : Decorator
+
+                {
+
+                    child.DetachFromParent();
+
+                    control.Child = child;
+
+                    return control;
+
+                }
+
+                public static T BindChild<T>(this T control, State<Control> childState) where T : Decorator
+
+                {
+
+                     void Handler(Control v) 
+
+                     {
+
+                         v?.DetachFromParent();
+
+                         control.Child = v;
+
+                     }
+
+                     if (childState.Value != null) childState.Value.DetachFromParent();
+
+                     control.Child = childState.Value;
+
+                     if(control is Control c)
+
+                     {
+
+                         c.AttachedToVisualTree += (s,e) => { control.Child = childState.Value; childState.OnChange += Handler; };
+
+                         c.DetachedFromVisualTree += (s,e) => { childState.OnChange -= Handler; };
+
+                         if(c.IsLoaded) childState.OnChange += Handler;
+
+                     }
+
+                     return control;
+
+                }
+
+                ");
+
+                sb.AppendLine("    }");
+
+        
+
+                // Separate Class for TemplatedControl Helpers (Padding)
+
+                sb.AppendLine($"    internal static class FluentHelpers_TemplatedControl_{assemblyName}");
+
+                sb.AppendLine("    {");
+
+                sb.AppendLine(@"
+
+                public static T SetPadding<T>(this T control, double uniform) where T : Avalonia.Controls.Primitives.TemplatedControl
+
+                {
+
+                    control.Padding = new Avalonia.Thickness(uniform);
+
+                    return control;
+
+                }
+
+                public static T SetPadding<T>(this T control, double horizontal, double vertical) where T : Avalonia.Controls.Primitives.TemplatedControl
+
+                {
+
+                    control.Padding = new Avalonia.Thickness(horizontal, vertical);
+
+                    return control;
+
+                }
+
+                public static T SetPadding<T>(this T control, double left, double top, double right, double bottom) where T : Avalonia.Controls.Primitives.TemplatedControl
+
+                {
+
+                    control.Padding = new Avalonia.Thickness(left, top, right, bottom);
+
+                    return control;
+
+                }
+
+                ");
+
+                sb.AppendLine("    }");
 
             }
 
-            else
+        
+
+            private void GenerateExtensionsForType(StringBuilder sb, INamedTypeSymbol type, string assemblyName)
 
             {
 
-                 sb.AppendLine($"                if ((object?)value is Avalonia.Controls.Control ctrl) ctrl.DetachFromParent();");
+                var typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
-                 sb.AppendLine($"                control.{propName} = value;");
+                var safeName = type.ToDisplayString().Replace(".", "_").Replace("<", "").Replace(">", "");
+
+        
+
+                sb.AppendLine($"    internal static class FluentExtensions_{safeName}_{assemblyName}");
+
+                sb.AppendLine("    {");
+
+        
+
+                // Get public properties declared IN THIS TYPE ONLY
+
+                var props = type.GetMembers().OfType<IPropertySymbol>()
+
+                    .Where(p => !p.IsStatic &&
+
+                                !p.IsReadOnly &&
+
+                                !p.IsIndexer &&
+
+                                p.DeclaredAccessibility == Accessibility.Public &&
+
+                                p.SetMethod != null && p.SetMethod.DeclaredAccessibility == Accessibility.Public && // Ensure setter is public
+
+                                SymbolEqualityComparer.Default.Equals(p.ContainingType, type));
+
+        
+
+                foreach (var prop in props)
+
+                {
+
+                    if (prop.GetAttributes().Any(a => a.AttributeClass?.Name == "ObsoleteAttribute")) continue;
+
+                    // FontSize is allowed now
+
+                    bool isControl = InheritsFrom(type, "Control") || type.Name == "Control";
+
+                    GeneratePropertyExtension(sb, typeName, prop, isControl);
+
+                }
+
+        
+
+                sb.AppendLine("    }");
 
             }
 
-            sb.AppendLine("            }");
+        
 
-            sb.AppendLine("            return control;");
+                private void GeneratePropertyExtension(StringBuilder sb, string typeName, IPropertySymbol prop, bool isControl)
 
-            sb.AppendLine("        }");
+        
 
-    
+                {
 
-        // State Setter
-        if (isAvaloniaProp)
-        {
-            // Dynamic Resource Setter
-            sb.AppendLine($"        public static T {propName}<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : {typeName}");
-            sb.AppendLine("        {");
-            sb.AppendLine($"            control.Bind({typeName}.{propName}Property, resource);");
-            sb.AppendLine("            return control;");
-            sb.AppendLine("        }");
-        }
+        
 
-        // Special handling for ContentControl.Content to support implicit string conversion via BindContent
-        if (propName == "Content" && typeName.Contains("ContentControl"))
-        {
-            // Generate generic State<TContent> overload that routes to BindContent/Bind
-            sb.AppendLine($"        public static T {propName}<T, TState>(this T control, State<TState> state) where T : {typeName}");
-            sb.AppendLine("        {");
-            sb.AppendLine($"            // Special handling for Content to support string conversion");
-                        sb.AppendLine($"            if (state is State<string> s)");
-                        sb.AppendLine($"            {{");
-                        sb.AppendLine($"                Svelonia.Fluent.StyleExtensions.BindContent(control, s);");
-                        sb.AppendLine($"            }}");
-                        sb.AppendLine($"            else");
-                        sb.AppendLine($"            {{");
-                        sb.AppendLine($"                void Handler(TState val) {{ if ((object?)val is Avalonia.Controls.Control ctrl) ctrl.DetachFromParent(); control.Content = val; }}");
-                        sb.AppendLine($"                if ((object?)state.Value is Avalonia.Controls.Control ctrlVal) ctrlVal.DetachFromParent();");
-                        sb.AppendLine($"                control.Content = state.Value;");
-                        sb.AppendLine($"                if(control is Avalonia.Controls.Control c)");
-                        sb.AppendLine($"                {{");
-                        sb.AppendLine($"                    c.AttachedToVisualTree += (s, e) => {{ if ((object?)state.Value is Avalonia.Controls.Control ctrlInit) ctrlInit.DetachFromParent(); control.Content = state.Value; state.OnChange += Handler; }};");
-                        sb.AppendLine($"                    c.DetachedFromVisualTree += (s, e) => {{ state.OnChange -= Handler; }};");
-                        sb.AppendLine($"                    if (c.IsLoaded) state.OnChange += Handler;");
-                        sb.AppendLine($"                }}");
-                        sb.AppendLine($"            }}");
-                        sb.AppendLine("            return control;");
-            sb.AppendLine("        }");
-            return;
-        }
+                    var propName = prop.Name;
 
-        sb.AppendLine($"        public static T {propName}<T>(this T control, State<{propType}> state) where T : {typeName}");
-        sb.AppendLine("        {");
+        
 
-        if (isAvaloniaProp)
-        {
-            sb.AppendLine($"            Svelonia.Fluent.Binder.Bind(control, {typeName}.{propName}Property, state);");
-        }
-        else
-        {
-            sb.AppendLine($"            void Handler({propType} val) => control.{propName} = val;");
-            sb.AppendLine($"            control.{propName} = state.Value;");
-            sb.AppendLine("            if(control is Avalonia.Controls.Control c)");
-            sb.AppendLine("            {");
-            sb.AppendLine($"                c.AttachedToVisualTree += (s, e) => {{ control.{propName} = state.Value; state.OnChange += Handler; }};");
-            sb.AppendLine("                c.DetachedFromVisualTree += (s, e) => {{ state.OnChange -= Handler; }};");
-            sb.AppendLine("                if (c.IsLoaded) state.OnChange += Handler;");
-            sb.AppendLine("            }");
-        }
+                    var propType = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
-        sb.AppendLine("            return control;");
-        sb.AppendLine("        }");
+        
+
+            
+
+        
+
+                    // Check Avalonia Property
+
+        
+
+                    var avaloniaPropField = prop.ContainingType.GetMembers($"{propName}Property").FirstOrDefault();
+
+        
+
+                    bool isAvaloniaProp = avaloniaPropField != null && avaloniaPropField.IsStatic;
+
+        
+
+            
+
+        
+
+                    // Determine parameter type for hover/pressed (nullable version of propType)
+
+        
+
+                    string paramType = propType;
+
+        
+
+                    if (prop.Type.IsValueType)
+
+        
+
+                    {
+
+        
+
+                        if (prop.Type.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T)
+
+        
+
+                            paramType += "?";
+
+        
+
+                    }
+
+        
+
+                    else
+
+        
+
+                    {
+
+        
+
+                        if (!propType.EndsWith("?"))
+
+        
+
+                            paramType += "?";
+
+        
+
+                    }
+
+        
+
+            
+
+        
+
+                                // Skip manual helpers and conflicting properties
+
+        
+
+            
+
+        
+
+                                if ((propName == "Child" && typeName.EndsWith("Decorator")) ||
+
+        
+
+            
+
+        
+
+                                    (propName == "Children" && typeName.EndsWith("Panel")) ||
+
+        
+
+            
+
+        
+
+                                    (propName == "ColumnDefinitions" && typeName.EndsWith("Grid")) ||
+
+        
+
+            
+
+        
+
+                                    (propName == "RowDefinitions" && typeName.EndsWith("Grid")) ||
+
+        
+
+            
+
+        
+
+                                    (propName == "Background") ||
+
+                                    
+
+                                    (propName == "BoxShadow"))
+
+        
+
+            
+
+        
+
+                                {
+
+        
+
+            
+
+        
+
+                                    return;
+
+        
+
+            
+
+        
+
+                                }
+
+        
+
+            
+
+        
+
+                    // Value Setter
+
+        
+
+                    sb.AppendLine($"        public static T Set{propName}<T>(this T control, {propType} value, {paramType} hover = default, {paramType} pressed = default) where T : {typeName}");
+
+        
+
+                    sb.AppendLine("        {");
+
+        
+
+                    sb.AppendLine("            if (hover == null && pressed == null)");
+
+        
+
+                    sb.AppendLine("            {");
+
+        
+
+                    sb.AppendLine($"                if ((object?)value is Avalonia.Controls.Control ctrl) ctrl.DetachFromParent();");
+
+        
+
+                    sb.AppendLine($"                control.{propName} = value;");
+
+        
+
+                    sb.AppendLine("            }");
+
+        
+
+                    sb.AppendLine("            else");
+
+        
+
+                    sb.AppendLine("            {");
+
+        
+
+                    if (isAvaloniaProp && isControl)
+
+        
+
+                    {
+
+        
+
+                         sb.AppendLine($"                Svelonia.Fluent.ControlStyleExtensions.SetStateProperty(control, {typeName}.{propName}Property, value, hover, pressed);");
+
+        
+
+                    }
+
+        
+
+                    else
+
+        
+
+                    {
+
+        
+
+                         sb.AppendLine($"                if ((object?)value is Avalonia.Controls.Control ctrl) ctrl.DetachFromParent();");
+
+        
+
+                         sb.AppendLine($"                control.{propName} = value;");
+
+        
+
+                    }
+
+        
+
+                    sb.AppendLine("            }");
+
+        
+
+                    sb.AppendLine("            return control;");
+
+        
+
+                    sb.AppendLine("        }");
+
+        
+
+            
+
+        
+
+                // State Setter
+
+                if (isAvaloniaProp)
+
+                {
+
+                    // Dynamic Resource Setter (Treated as Binding)
+
+                    sb.AppendLine($"        public static T Bind{propName}<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : {typeName}");
+
+                    sb.AppendLine("        {");
+
+                    sb.AppendLine($"            control.Bind({typeName}.{propName}Property, resource);");
+
+                    sb.AppendLine("            return control;");
+
+                    sb.AppendLine("        }");
+
+                }
+
+        
+
+                // Special handling for ContentControl.Content to support implicit string conversion via BindContent
+
+                if (propName == "Content" && typeName.Contains("ContentControl"))
+
+                {
+
+                    // Generate generic State<TContent> overload that routes to BindContent/Bind
+
+                    sb.AppendLine($"        public static T Bind{propName}<T, TState>(this T control, State<TState> state) where T : {typeName}");
+
+                    sb.AppendLine("        {");
+
+                    sb.AppendLine($"            // Special handling for Content to support string conversion");
+
+                                sb.AppendLine($"            if (state is State<string> s)");
+
+                                sb.AppendLine($"            {{");
+
+                                sb.AppendLine($"                Svelonia.Fluent.StyleExtensions.BindContent(control, s);");
+
+                                sb.AppendLine($"            }}");
+
+                                sb.AppendLine($"            else");
+
+                                sb.AppendLine($"            {{");
+
+                                sb.AppendLine($"                void Handler(TState val) {{ if ((object?)val is Avalonia.Controls.Control ctrl) ctrl.DetachFromParent(); control.Content = val; }}");
+
+                                sb.AppendLine($"                if ((object?)state.Value is Avalonia.Controls.Control ctrlVal) ctrlVal.DetachFromParent();");
+
+                                sb.AppendLine($"                control.Content = state.Value;");
+
+                                sb.AppendLine($"                if(control is Avalonia.Controls.Control c)");
+
+                                sb.AppendLine($"                {{");
+
+                                sb.AppendLine($"                    c.AttachedToVisualTree += (s, e) => {{ if ((object?)state.Value is Avalonia.Controls.Control ctrlInit) ctrlInit.DetachFromParent(); control.Content = state.Value; state.OnChange += Handler; }};");
+
+                                sb.AppendLine($"                    c.DetachedFromVisualTree += (s, e) => {{ state.OnChange -= Handler; }};");
+
+                                sb.AppendLine($"                    if (c.IsLoaded) state.OnChange += Handler;");
+
+                                sb.AppendLine($"                }}");
+
+                                sb.AppendLine($"            }}");
+
+                                sb.AppendLine("            return control;");
+
+                    sb.AppendLine("        }");
+
+                    return;
+
+                }
+
+        
+
+                sb.AppendLine($"        public static T Bind{propName}<T>(this T control, State<{propType}> state) where T : {typeName}");
+
+                sb.AppendLine("        {");
+
+        
+
+                if (isAvaloniaProp)
+
+                {
+
+                    sb.AppendLine($"            Svelonia.Fluent.Binder.Bind(control, {typeName}.{propName}Property, state);");
+
+                }
+
+                else
+
+                {
+
+                    sb.AppendLine($"            void Handler({propType} val) => control.{propName} = val;");
+
+                    sb.AppendLine($"            control.{propName} = state.Value;");
+
+                    sb.AppendLine("            if(control is Avalonia.Controls.Control c)");
+
+                    sb.AppendLine("            {");
+
+                    sb.AppendLine($"                c.AttachedToVisualTree += (s, e) => {{ control.{propName} = state.Value; state.OnChange += Handler; }};");
+
+                    sb.AppendLine("                c.DetachedFromVisualTree += (s, e) => {{ state.OnChange -= Handler; }};");
+
+                    sb.AppendLine("                if (c.IsLoaded) state.OnChange += Handler;");
+
+                    sb.AppendLine("            }");
+
+                }
+
+        
+
+                sb.AppendLine("            return control;");
+
+                sb.AppendLine("        }");
     }
 }
 

@@ -6,7 +6,7 @@ The core of Svelonia.Fluent is the automatic generation of extension methods for
 
 ## Fluent Syntax
 
-Every public property of an Avalonia control is exposed as a method that returns the control itself. This allows for method chaining.
+Every public property of an Avalonia control is exposed as a method prefixed with `Set` that returns the control itself. This allows for method chaining and clearly distinguishes property setters from other operations.
 
 ```csharp
 // Standard Avalonia (Object Initializer)
@@ -19,49 +19,49 @@ var btn = new Button
 
 // Svelonia Fluent
 var btn = new Button()
-    .Content("Click Me")
-    .Width(120)
-    .Height(40);
+    .SetContent("Click Me")
+    .SetWidth(120)
+    .SetHeight(40);
 ```
 
 ## Tree Structure
 
-Helpers like `Children`, `Child`, and `Content` make building the visual tree intuitive.
+Helpers like `SetChildren`, `SetChild`, and `SetContent` make building the visual tree intuitive.
 
 ### Panels (StackPanel, Grid, etc.)
-Use `.Children(...)` to add multiple child elements.
+Use `.SetChildren(...)` to add multiple child elements.
 
 ```csharp
 new StackPanel()
-    .Spacing(10)
-    .Children(
-        new TextBlock().Text("Header"),
-        new Button().Content("Action")
+    .SetSpacing(10)
+    .SetChildren(
+        new TextBlock().SetText("Header"),
+        new Button().SetContent("Action")
     )
 ```
 
 ### Decorators (Border, ScrollViewer, etc.)
-Use `.Child(...)` to set the single content element.
+Use `.SetChild(...)` to set the single content element.
 
 ```csharp
 new Border()
-    .BorderThickness(1)
-    .Child(
-        new TextBlock().Text("Inside Border")
+    .SetBorderThickness(1)
+    .SetChild(
+        new TextBlock().SetText("Inside Border")
     )
 ```
 
 ### ContentControls (Button, UserControl, etc.)
-Use `.Content(...)` to set the content.
+Use `.SetContent(...)` to set the content.
 
 ```csharp
-new Button().Content("Text Content");
+new Button().SetContent("Text Content");
 
 // Or complex content
-new Button().Content(
-    new StackPanel().Children(
+new Button().SetContent(
+    new StackPanel().SetChildren(
         new Icon(),
-        new TextBlock().Text("Icon Button")
+        new TextBlock().SetText("Icon Button")
     )
 )
 ```

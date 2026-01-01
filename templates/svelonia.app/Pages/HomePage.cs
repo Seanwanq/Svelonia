@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Svelonia.Core;
 using Svelonia.Fluent;
-using Svelonia.Generated;
+
 using Svelonia.Kit;
 
 namespace SveloniaApp.Pages;
@@ -14,50 +14,50 @@ public class HomePage : Page
     public HomePage()
     {
         Content = new Border()
-            .Background(Sve.Res("BackgroundColor"))
-            .Child(
+            .Bg(Sve.Res("BackgroundColor"))
+            .SetChild(
                 new StackPanel()
-                    .HorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center)
-                    .VerticalAlignment(Avalonia.Layout.VerticalAlignment.Center)
-                    .Spacing(20)
-                    .Children(
+                    .SetHorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center)
+                    .SetVerticalAlignment(Avalonia.Layout.VerticalAlignment.Center)
+                    .SetSpacing(20)
+                    .SetChildren(
                         new TextBlock()
-                            .Text("Counter")
-                            .FontSize(24)
-                            .FontWeight(Avalonia.Media.FontWeight.Bold)
-                            .Foreground(Sve.Res("TextColor"))
-                            .HorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center),
+                            .SetText("Counter")
+                            .SetFontSize(24)
+                            .SetFontWeight(Avalonia.Media.FontWeight.Bold)
+                            .Fg(Sve.Res("TextColor"))
+                            .SetHorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center),
 
                         new Border()
-                            .Padding(30)
-                            .CornerRadius(10)
-                            .Background(Sve.Res("PaperBg"))
-                            .BoxShadow(Sve.Res("ButtonShadowPressed"))
-                            .Child(
+                            .SetPadding(30)
+                            .SetCornerRadius(10)
+                            .Bg(Sve.Res("PaperBg"))
+                            .SetBoxShadow(Sve.Res("ButtonShadowPressed"))
+                            .SetChild(
                                 new TextBlock()
-                                    .BindTextContent(new Computed<string>(() => $"Count: {_count.Value}"))
-                                    .FontSize(32)
-                                    .Foreground(Sve.Res("PrimaryColor"))
-                                    .HorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center)
+                                    .BindText(new Computed<string>(() => $"Count: {_count.Value}"))
+                                    .SetFontSize(32)
+                                    .Fg(Sve.Res("PrimaryColor"))
+                                    .SetHorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center)
                             ),
 
                         new Border()
-                            .BoxShadow(Sve.Res("ButtonShadow"))
-                            .CornerRadius(10)
-                            .Child(
+                            .SetBoxShadow(Sve.Res("ButtonShadow"))
+                            .SetCornerRadius(10)
+                            .SetChild(
                                 new Button()
-                                    .Content("Increment")
-                                    .Padding(20, 10)
-                                    .Background(Sve.Res("PrimaryColor"))
-                                    .Foreground(Avalonia.Media.Brushes.White)
+                                    .SetContent("Increment")
+                                    .SetPadding(20, 10)
+                                    .Bg(Sve.Res("PrimaryColor"))
+                                    .Fg(Avalonia.Media.Brushes.White)
                                     .OnClick(_ => _count.Value++)
-                                    .HorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center)
+                                    .SetHorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center)
                             ),
 
                         new Button()
-                            .Content("Back to Welcome")
-                            .Background(Avalonia.Media.Brushes.Transparent)
-                            .Foreground(Sve.Res("TextColor"))
+                            .SetContent("Back to Welcome")
+                            .Bg(Avalonia.Media.Brushes.Transparent)
+                            .Fg(Sve.Res("TextColor"))
                             .OnClick(_ => App.Router.Navigate("/"))
                     )
             );

@@ -4,16 +4,16 @@
 
 Svelonia.Fluent integrates tightly with `Svelonia.Core` to provide seamless data binding.
 
-## Implicit Binding
+## Explicit Binding
 
-Most generated fluent methods have an overload that accepts `State<T>`. When used, the property is automatically bound to the state.
+Most generated fluent methods have a corresponding `BindX` method that accepts `State<T>`. When used, the property is automatically bound to the state.
 
 ```csharp
 State<double> width = new(100);
 
 new Rectangle()
-    .Width(width)      // Binds Width property to state
-    .Height(width);    // Binds Height property to state
+    .BindWidth(width)      // Binds Width property to state
+    .BindHeight(width);    // Binds Height property to state
 ```
 
 ## Text Binding
@@ -21,7 +21,8 @@ new Rectangle()
 ### TextBlock (One-Way)
 
 ```csharp
-new TextBlock().BindTextContent(myState);
+// Bind text content to a string state or computed value
+new TextBlock().BindText(myState);
 ```
 
 ## TextBox (Two-Way)
@@ -35,24 +36,22 @@ new TextBox()
     .BindText(name); // Two-way
 ```
 
-## Styling Bindings
-
 ## Content Binding
 
-You can bind the content of a Panel or ContentControl to a state.
+You can bind the content of a Panel or ContentControl to a state using the `Bind` prefix.
 
 ```csharp
 State<Control> currentView = new(new LoginView());
 
-new ContentControl().Content(currentView);
+new ContentControl().BindContent(currentView);
 ```
 
-Or for lists of children:
+Or for lists of children in a Panel:
 
 ```csharp
 State<IEnumerable<Control>> items = new(...);
 
-new StackPanel().Children(items);
+new StackPanel().BindChildren(items);
 ```
 
 ## Keyboard Events
@@ -68,20 +67,12 @@ new TextBox()
     .OnKey("Ctrl+S", Save);     // Matches Ctrl+S gesture
 ```
 
-### Strong-Typed Binding
-You can also use the `Key` enum directly.
-
-```csharp
-new Button()
-    .OnKey(Key.Escape, CloseDialog);
-```
-
 ### Focusing
-To ensure a control (like a Panel or Border) can receive keyboard events, use `.Focusable()`.
+To ensure a control (like a Panel or Border) can receive keyboard events, use `.SetFocusable()`.
 
 ```csharp
 new StackPanel()
-    .Focusable() // Enables focus
+    .SetFocusable() // Enables focus
     .OnKey("A", () => Console.WriteLine("A pressed"))
-    .Children(...);
+    .SetChildren(...);
 ```

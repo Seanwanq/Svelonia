@@ -151,7 +151,7 @@ public static class ControlStyleExtensions
         return true;
     }
 
-    private static bool ApplySingleState<T>(this T control, AvaloniaProperty prop, object? value) where T : Control
+    public static bool ApplySingleState<T>(this T control, AvaloniaProperty prop, object? value) where T : Control
     {
         if (value == null) return false;
         
@@ -205,143 +205,29 @@ public static class ControlStyleExtensions
     }
 
     /// <summary>
-    /// Multi-state Background
-    /// </summary>
-    public static T Background<T>(this T control, object? normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
-    {
-        var prop = control is Panel ? Panel.BackgroundProperty : 
-                   control is Avalonia.Controls.Border ? Avalonia.Controls.Border.BackgroundProperty :
-                   control is TemplatedControl ? TemplatedControl.BackgroundProperty :
-                   control is ContentPresenter ? ContentPresenter.BackgroundProperty :
-                   null;
-
-        if (prop == null) return control;
-
-        if (hover == null && pressed == null && disabled == null && focus == null)
-        {
-            control.ApplySingleState(prop, normal);
-            return control;
-        }
-
-        return control.SetStateProperty(prop, normal, hover, pressed, disabled, focus);
-    }
-
-    /// <summary>
-    /// Multi-state Foreground
-    /// </summary>
-    public static T Foreground<T>(this T control, object? normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
-    {
-        var prop = control is TemplatedControl ? TemplatedControl.ForegroundProperty :
-                   control is TextBlock ? TextBlock.ForegroundProperty :
-                   control is ContentPresenter ? ContentPresenter.ForegroundProperty :
-                   null;
-
-        if (prop == null) return control;
-
-        if (hover == null && pressed == null && disabled == null && focus == null)
-        {
-            control.ApplySingleState(prop, normal);
-            return control;
-        }
-
-        return control.SetStateProperty(prop, normal, hover, pressed, disabled, focus);
-    }
-
-    /// <summary>
-    /// Multi-state Padding
-    /// </summary>
-    public static T Padding<T>(this T control, object? normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
-    {
-        var prop = control is TemplatedControl ? TemplatedControl.PaddingProperty :
-                   control is Decorator ? Decorator.PaddingProperty :
-                   control is TextBlock ? TextBlock.PaddingProperty :
-                   null;
-
-        if (prop == null) return control;
-
-        if (hover == null && pressed == null && disabled == null && focus == null)
-        {
-            control.ApplySingleState(prop, normal);
-            return control;
-        }
-
-        return control.SetStateProperty(prop, normal, hover, pressed, disabled, focus);
-    }
-
-    /// <summary>
-    /// Multi-state BorderThickness
-    /// </summary>
-    public static T BorderThickness<T>(this T control, object? normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
-    {
-        var prop = control is TemplatedControl ? TemplatedControl.BorderThicknessProperty :
-                   control is Avalonia.Controls.Border ? Avalonia.Controls.Border.BorderThicknessProperty :
-                   null;
-
-        if (prop == null) return control;
-
-        if (hover == null && pressed == null && disabled == null && focus == null)
-        {
-            control.ApplySingleState(prop, normal);
-            return control;
-        }
-
-        return control.SetStateProperty(prop, normal, hover, pressed, disabled, focus);
-    }
-
-    /// <summary>
-    /// Multi-state BorderBrush
-    /// </summary>
-    public static T BorderBrush<T>(this T control, object? normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
-    {
-        var prop = control is TemplatedControl ? TemplatedControl.BorderBrushProperty :
-                   control is Avalonia.Controls.Border ? Avalonia.Controls.Border.BorderBrushProperty :
-                   null;
-
-        if (prop == null) return control;
-
-        if (hover == null && pressed == null && disabled == null && focus == null)
-        {
-            control.ApplySingleState(prop, normal);
-            return control;
-        }
-
-        return control.SetStateProperty(prop, normal, hover, pressed, disabled, focus);
-    }
-
-    /// <summary>
     /// Shorthand for BorderBrush and BorderThickness
     /// </summary>
-    public static T Border<T>(this T control, object brush, double thickness = 1.0, object? focusBrush = null) where T : Control
+    public static T SetBorder<T>(this T control, object brush, double thickness = 1.0, object? focusBrush = null) where T : Control
     {
-        control.BorderBrush(brush, focus: focusBrush);
-        control.BorderThickness(thickness);
+        var brushProp = control is Avalonia.Controls.Border ? Avalonia.Controls.Border.BorderBrushProperty :
+                        control is TemplatedControl ? TemplatedControl.BorderBrushProperty : null;
+        
+        var thickProp = control is Avalonia.Controls.Border ? Avalonia.Controls.Border.BorderThicknessProperty :
+                        control is TemplatedControl ? TemplatedControl.BorderThicknessProperty : null;
+
+        if (brushProp != null)
+            control.SetStateProperty(brushProp, brush, focus: focusBrush);
+            
+        if (thickProp != null)
+            control.SetStateProperty(thickProp, thickness);
+            
         return control;
-    }
-
-    /// <summary>
-    /// Multi-state CornerRadius
-    /// </summary>
-    public static T CornerRadius<T>(this T control, object? normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
-    {
-        var prop = control is TemplatedControl ? TemplatedControl.CornerRadiusProperty :
-                   control is Avalonia.Controls.Border ? Avalonia.Controls.Border.CornerRadiusProperty :
-                   null;
-
-        if (prop == null) return control;
-
-        if (hover == null && pressed == null && disabled == null && focus == null)
-        {
-            control.ApplySingleState(prop, normal);
-            return control;
-        }
-
-        return control.SetStateProperty(prop, normal, hover, pressed, disabled, focus);
     }
 
     /// <summary>
     /// Set if the control can receive focus
     /// </summary>
-    public static T Focusable<T>(this T control, bool focusable = true) where T : Control
+    public static T SetFocusable<T>(this T control, bool focusable = true) where T : Control
     {
         control.Focusable = focusable;
         return control;
@@ -355,50 +241,4 @@ public static class ControlStyleExtensions
 
     public static T OnDisabled<T>(this T control, Action<Style> configure) where T : Control
         => control.AddFluentStyle(x => x!.IsDisabled(), configure);
-
-    // Dynamic Resource Helpers
-    public static T BackgroundResource<T>(this T control, string key) where T : Control
-    {
-        var prop = control is Panel ? Panel.BackgroundProperty : 
-                   control is Avalonia.Controls.Border ? Avalonia.Controls.Border.BackgroundProperty :
-                   control is TemplatedControl ? TemplatedControl.BackgroundProperty :
-                   null;
-        if (prop != null) control.Bind(prop, new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension(key));
-        return control;
-    }
-
-    public static T ForegroundResource<T>(this T control, string key) where T : Control
-    {
-        var prop = control is TemplatedControl ? TemplatedControl.ForegroundProperty :
-                   control is TextBlock ? TextBlock.ForegroundProperty :
-                   null;
-        if (prop != null) control.Bind(prop, new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension(key));
-        return control;
-    }
-
-    public static T BorderBrushResource<T>(this T control, string key) where T : Control
-    {
-        var prop = control is Avalonia.Controls.Border ? Avalonia.Controls.Border.BorderBrushProperty :
-                   control is TemplatedControl ? TemplatedControl.BorderBrushProperty :
-                   null;
-        if (prop != null) control.Bind(prop, new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension(key));
-        return control;
-    }
-
-    /// <summary>
-    /// Multi-state BoxShadow (Only for Border)
-    /// </summary>
-    public static T BoxShadow<T>(this T control, object? normal, object? hover = null, object? pressed = null, object? disabled = null, object? focus = null) where T : Control
-    {
-        if (control is not Avalonia.Controls.Border border) return control;
-        var prop = Avalonia.Controls.Border.BoxShadowProperty;
-
-        if (hover == null && pressed == null && disabled == null && focus == null)
-        {
-            control.ApplySingleState(prop, normal);
-            return control;
-        }
-
-        return control.SetStateProperty(prop, normal, hover, pressed, disabled, focus);
-    }
 }
