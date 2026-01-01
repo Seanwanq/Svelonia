@@ -1,63 +1,78 @@
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Svelonia.Core;
 using Svelonia.Fluent;
-
 using Svelonia.Kit;
 
 namespace SveloniaApp.Pages;
 
 public class HomePage : Page
 {
-    private State<int> _count = new(0);
+    private readonly State<int> _count = new(0);
 
     public HomePage()
     {
+        Title = "Home - Svelonia";
+
         Content = new Border()
             .Bg(Sve.Res("BackgroundColor"))
             .SetChild(
                 new StackPanel()
-                    .SetHorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center)
-                    .SetVerticalAlignment(Avalonia.Layout.VerticalAlignment.Center)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
+                    .SetVerticalAlignment(VerticalAlignment.Center)
                     .SetSpacing(20)
                     .SetChildren(
                         new TextBlock()
-                            .SetText("Counter")
+                            .SetText("Reactive Counter")
                             .SetFontSize(24)
-                            .SetFontWeight(Avalonia.Media.FontWeight.Bold)
+                            .SetFontWeight(FontWeight.Bold)
                             .Fg(Sve.Res("TextColor"))
-                            .SetHorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center),
+                            .SetHorizontalAlignment(HorizontalAlignment.Center),
 
                         new Border()
-                            .SetPadding(30)
-                            .SetCornerRadius(10)
+                            .P(30)
+                            .Rounded(10)
                             .Bg(Sve.Res("PaperBg"))
                             .SetBoxShadow(Sve.Res("ButtonShadowPressed"))
                             .SetChild(
                                 new TextBlock()
-                                    .BindText(new Computed<string>(() => $"Count: {_count.Value}"))
+                                    .BindText(_count.Select(c => $"Count: {c}"))
                                     .SetFontSize(32)
                                     .Fg(Sve.Res("PrimaryColor"))
-                                    .SetHorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center)
+                                    .SetHorizontalAlignment(HorizontalAlignment.Center)      
                             ),
 
-                        new Border()
-                            .SetBoxShadow(Sve.Res("ButtonShadow"))
-                            .SetCornerRadius(10)
-                            .SetChild(
+                        new StackPanel()
+                            .SetOrientation(Orientation.Horizontal)
+                            .SetSpacing(10)
+                            .SetChildren(
+                                new Border()
+                                    .SetBoxShadow(Sve.Res("ButtonShadow"))
+                                    .Rounded(10)
+                                    .SetChild(
+                                        new Button()
+                                            .SetContent("Increment")
+                                            .P(20, 10)
+                                            .Bg(Sve.Res("PrimaryColor"))
+                                            .Fg(Brushes.White)
+                                            .Rounded(10)
+                                            .OnClick(_ => _count.Value++)
+                                    ),
+                                    
                                 new Button()
-                                    .SetContent("Increment")
-                                    .SetPadding(20, 10)
-                                    .Bg(Sve.Res("PrimaryColor"))
-                                    .Fg(Avalonia.Media.Brushes.White)
-                                    .OnClick(_ => _count.Value++)
-                                    .SetHorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center)
+                                    .SetContent("Clear")
+                                    .P(20, 10)
+                                    .Bg(Brushes.Transparent)
+                                    .Fg(Sve.Res("TextColor"))
+                                    .OnClick(_ => _count.Value = 0)
                             ),
 
                         new Button()
                             .SetContent("Back to Welcome")
-                            .Bg(Avalonia.Media.Brushes.Transparent)
-                            .Fg(Sve.Res("TextColor"))
+                            .Bg(Brushes.Transparent)
+                            .Fg(Brushes.Gray)
+                            .SetMargin(new Avalonia.Thickness(0, 20, 0, 0))
                             .OnClick(_ => App.Router.Navigate("/"))
                     )
             );

@@ -15,7 +15,8 @@ public static class ResponsiveExtensions
     public static T Bind<T, V>(this T control, AvaloniaProperty<V> property, State<V> state)
         where T : Control
     {
-        Binder.Bind(control, property, state);
+        // AOT Safe: Use direct IObservable binding
+        control.Bind(property, state.Select(x => (object?)x));
         return control;
     }
 
