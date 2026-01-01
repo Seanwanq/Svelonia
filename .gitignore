@@ -57,3 +57,7 @@ TestResult.xml
 nunit-*.xml
 
 demo/
+
+# Agent Task Files
+GEMENI.md
+GEMINI.md

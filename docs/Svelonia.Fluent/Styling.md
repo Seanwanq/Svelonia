@@ -65,6 +65,34 @@ Thanks to `SveConverter`, you no longer need to manually wrap values like `new T
 .CornerRadius(8)
 ```
 
+## Semantic Design System (G Class)
+
+Svelonia introduces a global `G` class to manage semantic design constants (Spacing, Radius, Sizes). This replaces magic numbers with meaningful names and allows for global design adjustments.
+
+```csharp
+using Svelonia.Fluent;
+
+// Use semantic presets
+new StackPanel()
+    .Spacing(G.Medium)    // 16.0
+    .Margin(G.Large);     // 24.0
+
+new Border()
+    .Rounded(G.RadiusSmall) // 4.0
+    .Padding(G.Small);      // 8.0
+```
+
+### Configuration
+
+You can override these values at application startup to match your design system:
+
+```csharp
+// App.cs or Program.cs
+G.Small = 10.0;
+G.Medium = 20.0;
+G.RadiusSmall = 6.0;
+```
+
 ## Drill-Down Styling (Advanced)
 
 For properties that don't map to resources, Svelonia attempts to "drill down" into the template (e.g., finding `PART_Border`). This is handled automatically by the fluent helpers.
