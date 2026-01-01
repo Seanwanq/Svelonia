@@ -150,7 +150,7 @@ public class SveloniaTheme
                     }
                     break;
                 case JsonValueKind.Number:
-                    finalValue = element.GetDouble();
+                    finalValue = element.ToString();
                     break;
                 case JsonValueKind.True:
                     finalValue = true;
