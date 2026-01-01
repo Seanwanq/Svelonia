@@ -122,29 +122,45 @@ public class SveloniaTheme
 
         object finalValue = value;
 
-        // Try to parse color or gradient if it's a string
-        if (value is JsonElement element && element.ValueKind == JsonValueKind.String)
+        if (value is JsonElement element)
         {
-            var str = element.GetString();
-            if (str == null)
+            switch (element.ValueKind)
             {
-                finalValue = string.Empty;
-            }
-            else if (str.StartsWith("#") && Color.TryParse(str, out var color))
-            {
-                finalValue = new SolidColorBrush(color);
-            }
-            else if (str.StartsWith("linear-gradient("))
-            {
-                finalValue = ParseLinearGradient(str);
-            }
-            else if (key.Contains("Shadow") && Color.TryParse(str.Split(' ').Last(), out _))
-            {
-                finalValue = ParseBoxShadow(str);
-            }
-            else
-            {
-                finalValue = str;
+                case JsonValueKind.String:
+                    var str = element.GetString();
+                    if (str == null)
+                    {
+                        finalValue = string.Empty;
+                    }
+                    else if (str.StartsWith("#") && Color.TryParse(str, out var color))
+                    {
+                        finalValue = new SolidColorBrush(color);
+                    }
+                    else if (str.StartsWith("linear-gradient("))
+                    {
+                        finalValue = ParseLinearGradient(str);
+                    }
+                    else if (key.Contains("Shadow") && Color.TryParse(str.Split(' ').Last(), out _))
+                    {
+                        finalValue = ParseBoxShadow(str);
+                    }
+                    else
+                    {
+                        finalValue = str;
+                    }
+                    break;
+                case JsonValueKind.Number:
+                    finalValue = element.GetDouble();
+                    break;
+                case JsonValueKind.True:
+                    finalValue = true;
+                    break;
+                case JsonValueKind.False:
+                    finalValue = false;
+                    break;
+                default:
+                    finalValue = element;
+                    break;
             }
         }
 
