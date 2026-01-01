@@ -150,7 +150,13 @@ public class SveloniaTheme
                     }
                     break;
                 case JsonValueKind.Number:
-                    finalValue = element.ToString();
+                    double num = element.GetDouble();
+                    if (key.EndsWith("Radius"))
+                        finalValue = new CornerRadius(num);
+                    else if (key.EndsWith("Margin") || key.EndsWith("Padding") || key.EndsWith("Thickness") || key.EndsWith("Gap") || key.EndsWith("Spacing"))
+                        finalValue = new Thickness(num);
+                    else
+                        finalValue = num;
                     break;
                 case JsonValueKind.True:
                     finalValue = true;

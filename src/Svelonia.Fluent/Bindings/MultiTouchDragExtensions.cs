@@ -144,13 +144,20 @@ public static class MultiTouchDragExtensions
                 state.Ghost = null;
             }
             
-            // 恢复本体裁剪
-            control.Clip = null;
-
             onEnd?.Invoke();
 
             if (animateBack)
             {
+                // 监听动画过程中的变化，实时更新裁剪
+                EventHandler<AvaloniaPropertyChangedEventArgs> handler = (s, args) => 
+                {
+                    if (args.Property == TranslateTransform.XProperty || args.Property == TranslateTransform.YProperty)
+                    {
+                        UpdateVisuals(state, control, constrainTo, boundaryMode);
+                    }
+                };
+                state.Transform.PropertyChanged += handler;
+
                 var duration = TimeSpan.FromMilliseconds(250);
                 state.Transform.Transitions = new Transitions
                 {
@@ -159,7 +166,15 @@ public static class MultiTouchDragExtensions
                 };
                 state.Transform.X = 0;
                 state.Transform.Y = 0;
+
+                await Task.Delay(duration);
+                
+                state.Transform.PropertyChanged -= handler;
+                state.Transform.Transitions = null;
             }
+
+            // 最终恢复本体裁剪
+            control.Clip = null;
         }
 
         control.PointerReleased += (s, e) => { if(e.Pointer.Id == state.PointerId) EndDrag(e.Pointer); };

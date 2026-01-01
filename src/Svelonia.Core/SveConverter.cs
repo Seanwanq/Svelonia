@@ -38,8 +38,39 @@ public static class SveConverter
         {
             if (targetType == typeof(Color) && Color.TryParse(s, out var color)) return color;
             if (targetType == typeof(IBrush) && Color.TryParse(s, out var bColor)) return new SolidColorBrush(bColor);
+            if (targetType == typeof(BoxShadows)) return ParseBoxShadow(s);
         }
 
         return value;
+    }
+
+    private static BoxShadows ParseBoxShadow(string str)
+    {
+        // Format: "OffsetX OffsetY Blur [Spread] #Color"
+        try
+        {
+            var parts = str.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            var colorStr = parts.Last();
+            if (!Color.TryParse(colorStr, out var color)) color = Colors.Black;
+
+            double offsetX = double.Parse(parts[0]);
+            double offsetY = double.Parse(parts[1]);
+            double blur = double.Parse(parts[2]);
+            double spread = 0;
+            if (parts.Count > 4) spread = double.Parse(parts[3]);
+
+            return new BoxShadows(new BoxShadow
+            {
+                OffsetX = offsetX,
+                OffsetY = offsetY,
+                Blur = blur,
+                Spread = spread,
+                Color = color
+            });
+        }
+        catch
+        {
+            return new BoxShadows(new BoxShadow());
+        }
     }
 }
