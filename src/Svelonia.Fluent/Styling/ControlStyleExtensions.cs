@@ -191,7 +191,12 @@ public static class ControlStyleExtensions
         var finalValue = SveConverter.Convert(prop, value);
         if (finalValue is Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension drDirect)
         {
-            control.Bind(prop, drDirect);
+            if (drDirect.ResourceKey != null)
+            {
+                var observable = control.GetResourceObservable(drDirect.ResourceKey)
+                                        .Select(x => SveConverter.Convert(prop, x));
+                control.Bind(prop, observable.ToBinding());
+            }
             return true;
         }
 
