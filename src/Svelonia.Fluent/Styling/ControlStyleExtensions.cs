@@ -108,7 +108,9 @@ public static class ControlStyleExtensions
 
         if (value is IState state)
         {
-            style.Setters.Add(new Setter(prop, new Binding { Source = state, Path = nameof(IState.ValueObject), Mode = BindingMode.OneWay }));
+            // AOT Safe: Use IObservable binding with conversion
+            var observable = state.Select(x => SveConverter.Convert(prop, x));
+            style.Setters.Add(new Setter(prop, observable));
         }
         else if (value is Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension dr)
         {
@@ -116,7 +118,7 @@ public static class ControlStyleExtensions
             {
                 var observable = control.GetResourceObservable(dr.ResourceKey)
                                         .Select(x => SveConverter.Convert(prop, x));
-                style.Setters.Add(new Setter(prop, observable.ToBinding()));
+                style.Setters.Add(new Setter(prop, observable));
             }
         }
         else
@@ -195,7 +197,7 @@ public static class ControlStyleExtensions
             {
                 var observable = control.GetResourceObservable(drDirect.ResourceKey)
                                         .Select(x => SveConverter.Convert(prop, x));
-                control.Bind(prop, observable.ToBinding());
+                control.Bind(prop, observable);
             }
             return true;
         }

@@ -1,6 +1,13 @@
 # Svelonia Documentation
 
-Welcome to the official documentation for Svelonia, a C# UI framework for Avalonia built with a focus on developer experience, fine-grained reactivity, and fluent APIs.
+Welcome to the official documentation for Svelonia, a C# UI framework for Avalonia built with a focus on developer experience, fine-grained reactivity, and **Full Native AOT compatibility**.
+
+## Core Pillars
+
+- **Pure C#**: No XAML, no magic strings.
+- **Fine-Grained Reactivity**: State-driven UI with automatic dependency tracking.
+- **Zero-Reflection**: Optimized for Native AOT and Aggressive Trimming.
+- **Fluent API**: Chainable, discoverable, and type-safe.
 
 ## Modules
 

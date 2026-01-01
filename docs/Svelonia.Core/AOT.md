@@ -1,36 +1,69 @@
 # Ahead-of-Time (AOT) Compilation
 
-Svelonia is designed to be compatible with Native AOT and Trimming. To achieve this, the framework avoids runtime reflection in critical paths (like service resolution and JSON parsing).
+Svelonia is one of the few Avalonia-based frameworks built from the ground up for **Native AOT** and **Aggressive Trimming**. By replacing XAML and reflection-based bindings with source-generated C# code, Svelonia enables ultra-small binary sizes and near-instant startup times.
 
-## Implementing `ISveloniaApplication`
+---
 
-For framework features like keyboard shortcuts (`OnKey`) or Mediator commands to work in an AOT environment, your main `Application` class must implement the `ISveloniaApplication` interface. This provides a type-safe way for the framework to access your `IServiceProvider`.
+## 1. The Zero-Reflection Binding System
 
-### Example `App.cs`
+Standard Avalonia applications often rely on `new Binding { Path = "Property" }`, which uses runtime reflection to find data. This is incompatible with strict AOT.
+
+**Svelonia's Solution:**
+All `.BindX()` methods and reactive styles (like `.Bg(state)`) use a **Zero-Reflection path**:
+- `IState` implements `IObservable<object?>`.
+- Svelonia's internals map these observables directly to Avalonia properties using static metadata.
+- Result: The compiler can "see" exactly which properties are being accessed, allowing it to remove unused code safely.
+
+---
+
+## 2. Framework Requirements
+
+### `ISveloniaApplication`
+To ensure services (like Mediator or Dialogs) work without reflection, your `App` class must implement `ISveloniaApplication`:
 
 ```csharp
-using Svelonia.Core;
-
 public class App : Application, ISveloniaApplication
 {
-    // Required by ISveloniaApplication
     public IServiceProvider? Services { get; private set; }
-
-    public override void OnFrameworkInitializationCompleted()
-    {
-        var collection = new ServiceCollection();
-        // ... register your services
-        Services = collection.BuildServiceProvider();
-        
-        base.OnFrameworkInitializationCompleted();
-    }
+    // ...
 }
 ```
 
-## JSON Theming
+### Static Mediator
+Always use the AOT-safe registration for your business logic:
+```csharp
+// Use this
+services.AddSveloniaDataAot(); 
 
-SveloniaTheme uses source-generated JSON contexts. If you define custom theme objects, ensure you use the `JsonSerializerContext` pattern to avoid reflection-based deserialization.
+// Instead of this (which uses reflection assembly scanning)
+// services.AddSveloniaData(assembly); 
+```
 
-## Mediator Registry
+---
 
-Always use `services.AddSveloniaDataAot()` in your DI setup. This uses the generated static registry instead of scanning assemblies at runtime.
+## 3. Publishing for AOT
+
+To build a truly native, single-file executable, use the following command:
+
+```bash
+dotnet publish -c Release -r win-x64 /p:PublishAot=true /p:OptimizationPreference=Size
+```
+
+### Recommended Project Settings
+Ensure your `.csproj` includes these flags to enable the AOT analyzers during development:
+
+```xml
+<PropertyGroup>
+  <IsAotCompatible>true</IsAotCompatible>
+  <EnableAotAnalyzer>true</EnableAotAnalyzer>
+  <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+</PropertyGroup>
+```
+
+---
+
+## 4. Trimming & Third-Party Libraries
+
+When using third-party Avalonia libraries that are NOT AOT-compatible, you may see warnings during publish. Svelonia helps mitigate this by providing its own generated extensions, but you may still need to use a `TrimmerDescriptor` file to "keep" certain types if they are only accessed via legacy reflection paths.
+
+> **Tip**: Svelonia's **Escape Hatch** API (`.Set(Property, value)`) is also 100% AOT safe, as it uses the property metadata objects directly.

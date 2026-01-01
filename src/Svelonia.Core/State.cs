@@ -1,11 +1,14 @@
 using Avalonia.Threading;
+using System;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 namespace Svelonia.Core;
 
 /// <summary>
 /// Base interface for all state objects
 /// </summary>
-public interface IState : IDependency
+public interface IState : IDependency, IObservable<object?>
 {
     /// <summary>
     /// Gets the current value as an object
@@ -27,10 +30,11 @@ public class State<T>(T initialValue) : IState
 {
     private T _value = initialValue;
     private readonly HashSet<IObserver> _observers = new();
+    private readonly BehaviorSubject<object?> _subject = new(initialValue);
 
     /// <summary>
     /// 
-/// </summary>
+    /// </summary>
     public event Action<T>? OnChange;
     
     /// <inheritdoc />
@@ -46,7 +50,7 @@ public class State<T>(T initialValue) : IState
 
     /// <summary>
     /// 
-/// </summary>
+    /// </summary>
     public T Value
     {
         get
@@ -67,6 +71,7 @@ public class State<T>(T initialValue) : IState
             _value = value;
             OnChange?.Invoke(_value);
             OnChangeObject?.Invoke(_value);
+            _subject.OnNext(_value);
             NotifyObservers();
 
             StateDebug.NotifyChange(this, _value);
@@ -75,7 +80,7 @@ public class State<T>(T initialValue) : IState
 
     /// <summary>
     /// 
-/// </summary>
+    /// </summary>
     /// <param name="observer"></param>
     public void Subscribe(IObserver observer)
     {
@@ -84,7 +89,7 @@ public class State<T>(T initialValue) : IState
 
     /// <summary>
     /// 
-/// </summary>
+    /// </summary>
     /// <param name="observer"></param>
     public void Unsubscribe(IObserver observer)
     {
@@ -107,5 +112,10 @@ public class State<T>(T initialValue) : IState
         {
             observer.OnStateChanged();
         }
+    }
+
+    public IDisposable Subscribe(System.IObserver<object?> observer)
+    {
+        return _subject.Subscribe(observer);
     }
 }

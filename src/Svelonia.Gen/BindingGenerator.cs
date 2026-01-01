@@ -23,6 +23,7 @@ public class BindingGenerator : IIncrementalGenerator
         sb.AppendLine("#nullable enable");
         sb.AppendLine("#pragma warning disable CS8620, CS8604, CS8619");
         sb.AppendLine("using System;");
+        sb.AppendLine("using System.Reactive.Linq;");
         sb.AppendLine("using Avalonia.Controls;");
         sb.AppendLine("using Avalonia.Controls.Primitives;");
         sb.AppendLine("using Avalonia.Layout;");
@@ -943,125 +944,687 @@ public class BindingGenerator : IIncrementalGenerator
 
         
 
-                // State Setter
-
-                if (isAvaloniaProp)
-
-                {
-
-                    // Dynamic Resource Setter (Treated as Binding)
-
-                    sb.AppendLine($"        public static T Bind{propName}<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : {typeName}");
-
-                    sb.AppendLine("        {");
-
-                    sb.AppendLine($"            control.Bind({typeName}.{propName}Property, resource);");
-
-                    sb.AppendLine("            return control;");
-
-                    sb.AppendLine("        }");
-
-                }
+                        // State Setter
 
         
 
-                // Special handling for ContentControl.Content to support implicit string conversion via BindContent
-
-                if (propName == "Content" && typeName.Contains("ContentControl"))
-
-                {
-
-                    // Generate generic State<TContent> overload that routes to BindContent/Bind
-
-                    sb.AppendLine($"        public static T Bind{propName}<T, TState>(this T control, State<TState> state) where T : {typeName}");
-
-                    sb.AppendLine("        {");
-
-                    sb.AppendLine($"            // Special handling for Content to support string conversion");
-
-                                sb.AppendLine($"            if (state is State<string> s)");
-
-                                sb.AppendLine($"            {{");
-
-                                sb.AppendLine($"                Svelonia.Fluent.StyleExtensions.BindContent(control, s);");
-
-                                sb.AppendLine($"            }}");
-
-                                sb.AppendLine($"            else");
-
-                                sb.AppendLine($"            {{");
-
-                                sb.AppendLine($"                void Handler(TState val) {{ if ((object?)val is Avalonia.Controls.Control ctrl) ctrl.DetachFromParent(); control.Content = val; }}");
-
-                                sb.AppendLine($"                if ((object?)state.Value is Avalonia.Controls.Control ctrlVal) ctrlVal.DetachFromParent();");
-
-                                sb.AppendLine($"                control.Content = state.Value;");
-
-                                sb.AppendLine($"                if(control is Avalonia.Controls.Control c)");
-
-                                sb.AppendLine($"                {{");
-
-                                sb.AppendLine($"                    c.AttachedToVisualTree += (s, e) => {{ if ((object?)state.Value is Avalonia.Controls.Control ctrlInit) ctrlInit.DetachFromParent(); control.Content = state.Value; state.OnChange += Handler; }};");
-
-                                sb.AppendLine($"                    c.DetachedFromVisualTree += (s, e) => {{ state.OnChange -= Handler; }};");
-
-                                sb.AppendLine($"                    if (c.IsLoaded) state.OnChange += Handler;");
-
-                                sb.AppendLine($"                }}");
-
-                                sb.AppendLine($"            }}");
-
-                                sb.AppendLine("            return control;");
-
-                    sb.AppendLine("        }");
-
-                    return;
-
-                }
+            
 
         
 
-                sb.AppendLine($"        public static T Bind{propName}<T>(this T control, State<{propType}> state) where T : {typeName}");
-
-                sb.AppendLine("        {");
+                        if (isAvaloniaProp)
 
         
 
-                if (isAvaloniaProp)
-
-                {
-
-                    sb.AppendLine($"            Svelonia.Fluent.Binder.Bind(control, {typeName}.{propName}Property, state);");
-
-                }
-
-                else
-
-                {
-
-                    sb.AppendLine($"            void Handler({propType} val) => control.{propName} = val;");
-
-                    sb.AppendLine($"            control.{propName} = state.Value;");
-
-                    sb.AppendLine("            if(control is Avalonia.Controls.Control c)");
-
-                    sb.AppendLine("            {");
-
-                    sb.AppendLine($"                c.AttachedToVisualTree += (s, e) => {{ control.{propName} = state.Value; state.OnChange += Handler; }};");
-
-                    sb.AppendLine("                c.DetachedFromVisualTree += (s, e) => {{ state.OnChange -= Handler; }};");
-
-                    sb.AppendLine("                if (c.IsLoaded) state.OnChange += Handler;");
-
-                    sb.AppendLine("            }");
-
-                }
+            
 
         
 
-                sb.AppendLine("            return control;");
+                        {
 
-                sb.AppendLine("        }");
+        
+
+            
+
+        
+
+                            // Dynamic Resource Setter (Treated as Binding)
+
+        
+
+            
+
+        
+
+                            sb.AppendLine($"        public static T Bind{propName}<T>(this T control, Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension resource) where T : {typeName}");
+
+        
+
+            
+
+        
+
+                            sb.AppendLine("        {");
+
+        
+
+            
+
+        
+
+                            sb.AppendLine($"            control.Bind({typeName}.{propName}Property, resource);");
+
+        
+
+            
+
+        
+
+                            sb.AppendLine("            return control;");
+
+        
+
+            
+
+        
+
+                            sb.AppendLine("        }");
+
+        
+
+            
+
+        
+
+                        }
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                // Special handling for ContentControl.Content to support implicit string conversion via BindContent
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                if (propName == "Content" && typeName.Contains("ContentControl"))
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                {
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                    // Generate generic State<TContent> overload that routes to BindContent/Bind
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                    sb.AppendLine($"        public static T Bind{propName}<T, TState>(this T control, State<TState> state) where T : {typeName}");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                    sb.AppendLine("        {");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                    sb.AppendLine($"            // Special handling for Content to support string conversion");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                                sb.AppendLine($"            if (state is State<string> s)");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                                sb.AppendLine($"            {{");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                                sb.AppendLine($"                Svelonia.Fluent.StyleExtensions.BindContent(control, s);");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                                sb.AppendLine($"            }}");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                                sb.AppendLine($"            else");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                                sb.AppendLine($"            {{");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                                sb.AppendLine($"                // AOT Safe: Use IObservable path");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                                sb.AppendLine($"                var observable = state.Select(x => {{ if ((object?)x is Avalonia.Controls.Control ctrl) ctrl.DetachFromParent(); return (object?)x; }});");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                                sb.AppendLine($"                control.Bind({typeName}.{propName}Property, observable);");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                                sb.AppendLine($"            }}");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                                sb.AppendLine("            return control;");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                    sb.AppendLine("        }");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                    return;
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                }
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                        
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                sb.AppendLine($"        public static T Bind{propName}<T>(this T control, State<{propType}> state) where T : {typeName}");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                sb.AppendLine("        {");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                        
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                if (isAvaloniaProp)
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                {
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                    sb.AppendLine($"            // AOT Safe: Use IObservable binding");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                    sb.AppendLine($"            var observable = state.Select(x => SveConverter.Convert({typeName}.{propName}Property, x));");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                    sb.AppendLine($"            control.Bind({typeName}.{propName}Property, observable);");
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                                }
+
+        
+
+            
+
+        
+
+                        else
+
+        
+
+            
+
+        
+
+                        {
+
+        
+
+            
+
+        
+
+                            sb.AppendLine($"            void Handler({propType} val) => control.{propName} = val;");
+
+        
+
+            
+
+        
+
+                            sb.AppendLine($"            control.{propName} = state.Value;");
+
+        
+
+            
+
+        
+
+                            sb.AppendLine("            if(control is Avalonia.Controls.Control c)");
+
+        
+
+            
+
+        
+
+                            sb.AppendLine("            {");
+
+        
+
+            
+
+        
+
+                            sb.AppendLine($"                c.AttachedToVisualTree += (s, e) => {{ control.{propName} = state.Value; state.OnChange += Handler; }};");
+
+        
+
+            
+
+        
+
+                            sb.AppendLine("                c.DetachedFromVisualTree += (s, e) => {{ state.OnChange -= Handler; }};");
+
+        
+
+            
+
+        
+
+                            sb.AppendLine("                if (c.IsLoaded) state.OnChange += Handler;");
+
+        
+
+            
+
+        
+
+                            sb.AppendLine("            }");
+
+        
+
+            
+
+        
+
+                        }
+
+        
+
+            
+
+        
+
+                
+
+        
+
+            
+
+        
+
+                        sb.AppendLine("            return control;");
+
+        
+
+            
+
+        
+
+                        sb.AppendLine("        }");
     }
 }
 
