@@ -7,6 +7,13 @@ namespace Svelonia.Core;
 /// <summary>
 /// 
 /// </summary>
+public static partial class Svelonia
+{
+}
+
+/// <summary>
+/// 
+/// </summary>
 public static partial class Sve
 {
     private static IServiceProvider? _serviceProvider;

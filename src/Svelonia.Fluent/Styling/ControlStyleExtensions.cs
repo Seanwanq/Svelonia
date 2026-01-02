@@ -1,13 +1,13 @@
+using System.Reactive.Linq;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
+using Avalonia.Data;
 using Avalonia.Media;
 using Avalonia.Styling;
-using Avalonia.Data;
-using System.Reactive.Linq;
 using Svelonia.Core;
 
 namespace Svelonia.Fluent;
@@ -61,7 +61,8 @@ public static class ControlStyleExtensions
         // 3. Standard Styling Strategy
         bool isButton = control is Button;
         bool isCheckBox = control is CheckBox;
-        
+
+
         bool needsDrillDown = (isButton || isCheckBox) && (
             prop == TemplatedControl.BackgroundProperty ||
             prop == TemplatedControl.ForegroundProperty ||
@@ -72,7 +73,8 @@ public static class ControlStyleExtensions
         );
 
         Func<Selector?, Selector> target = needsDrillDown
-            ? (isButton 
+            ? (isButton
+
                 ? x => x.OfType<T>().Template().OfType<ContentPresenter>()
                 : x => x.OfType<T>().Template().Name("NormalRectangle")) // CheckBox
             : x => x.OfType<T>();
@@ -110,7 +112,7 @@ public static class ControlStyleExtensions
         {
             // AOT Safe: Use IObservable binding with conversion
             var observable = state.Select(x => SveConverter.Convert(prop, x));
-            style.Setters.Add(new Setter(prop, observable));
+            style.Setters.Add(new Setter(prop, observable.ToBinding()));
         }
         else if (value is Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension dr)
         {
@@ -118,7 +120,7 @@ public static class ControlStyleExtensions
             {
                 var observable = control.GetResourceObservable(dr.ResourceKey)
                                         .Select(x => SveConverter.Convert(prop, x));
-                style.Setters.Add(new Setter(prop, observable));
+                style.Setters.Add(new Setter(prop, observable.ToBinding()));
             }
         }
         else
@@ -156,7 +158,8 @@ public static class ControlStyleExtensions
     public static bool ApplySingleState<T>(this T control, AvaloniaProperty prop, object? value) where T : Control
     {
         if (value == null) return false;
-        
+
+
         if (value is IState state)
         {
             void Handler(object? val)
@@ -213,16 +216,19 @@ public static class ControlStyleExtensions
     {
         var brushProp = control is Avalonia.Controls.Border ? Avalonia.Controls.Border.BorderBrushProperty :
                         control is TemplatedControl ? TemplatedControl.BorderBrushProperty : null;
-        
+
+
         var thickProp = control is Avalonia.Controls.Border ? Avalonia.Controls.Border.BorderThicknessProperty :
                         control is TemplatedControl ? TemplatedControl.BorderThicknessProperty : null;
 
         if (brushProp != null)
             control.SetStateProperty(brushProp, brush, focus: focusBrush);
-            
+
+
         if (thickProp != null)
             control.SetStateProperty(thickProp, thickness);
-            
+
+
         return control;
     }
 
