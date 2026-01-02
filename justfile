@@ -27,6 +27,10 @@ pack version:
 	dotnet pack src/Svelonia.Kit/Svelonia.Kit.csproj -c Release -o artifacts
 	dotnet pack templates/Svelonia.Templates.csproj -c Release -o artifacts
 
-# End-to-end test of the template
+# End-to-end test of the template (JIT)
 test-template:
 	powershell -File scripts/test-template.ps1
+
+# End-to-end test of the template (Native AOT)
+test-template-aot:
+	powershell -File scripts/test-template.ps1 -Aot

@@ -16,5 +16,14 @@
         "type": "project"
     },
     "sourceName": "SveloniaApp",
-    "preferNameDirectory": true
+    "preferNameDirectory": true,
+    "symbols": {
+        "Aot": {
+            "type": "parameter",
+            "datatype": "bool",
+            "defaultValue": "false",
+            "displayName": "Native AOT",
+            "description": "Enable Native AOT publishing."
+        }
+    }
 }

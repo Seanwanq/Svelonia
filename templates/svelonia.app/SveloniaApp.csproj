@@ -5,6 +5,9 @@
     <OutputType>WinExe</OutputType>
     <Nullable>enable</Nullable>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!--#if (Aot)-->
+    <PublishAot>true</PublishAot>
+    <!--#endif-->
   </PropertyGroup>
 
   <ItemGroup>
