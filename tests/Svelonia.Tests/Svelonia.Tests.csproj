@@ -16,6 +16,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Svelonia.Core\Svelonia.Core.csproj" />
+    <ProjectReference Include="..\..\src\Svelonia.Kit\Svelonia.Kit.csproj" />
+    <ProjectReference Include="..\..\src\Svelonia.Data\Svelonia.Data.csproj" />
+    <ProjectReference Include="..\..\src\Svelonia.Fluent\Svelonia.Fluent.csproj" />
+    <ProjectReference Include="..\..\src\Svelonia.Gen\Svelonia.Gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>
