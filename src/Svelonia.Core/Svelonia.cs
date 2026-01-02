@@ -91,4 +91,14 @@ public static partial class Sve
     {
         return new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension(key);
     }
+
+    /// <summary>
+    /// Creates a reactive effect that runs immediately and re-runs whenever its dependencies change.
+    /// </summary>
+    /// <param name="action">The action to execute.</param>
+    /// <returns>A disposable that stops the effect.</returns>
+    public static IDisposable Effect(Action action)
+    {
+        return new Effect(action);
+    }
 }

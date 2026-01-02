@@ -25,12 +25,21 @@ public interface IState : IDependency, IObservable<object?>
 /// 
 /// </summary>
 /// <typeparam name="T"></typeparam>
-/// <param name="initialValue"></param>
-public class State<T>(T initialValue) : IState
+public class State<T> : IState
 {
-    private T _value = initialValue;
+    private T _value;
     private readonly HashSet<IObserver> _observers = new();
-    private readonly BehaviorSubject<object?> _subject = new(initialValue);
+    private readonly BehaviorSubject<object?> _subject;
+
+    /// <summary>
+    /// Initializes a new instance of the State class.
+    /// </summary>
+    /// <param name="initialValue"></param>
+    public State(T initialValue)
+    {
+        _value = initialValue;
+        _subject = new BehaviorSubject<object?>(initialValue);
+    }
 
     /// <summary>
     /// 
