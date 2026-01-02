@@ -34,7 +34,11 @@ jobs:
           fi
           echo "Detected Version: $VERSION"
 
-      # 2. Update Template References (Critical!)
+      # 2. Run Tests
+      - name: Run Tests
+        run: dotnet test tests/Svelonia.Tests/Svelonia.Tests.csproj -c Release
+
+      # 3. Update Template References (Critical!)
       # We must update the Svelonia.* package versions in the template .csproj
       # to match the version we are currently releasing.
       - name: Update Template References
