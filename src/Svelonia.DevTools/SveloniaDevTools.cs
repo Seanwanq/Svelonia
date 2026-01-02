@@ -30,7 +30,7 @@ public static class SveloniaDevTools
     {
         window.KeyDown += (s, e) =>
         {
-            if (e.Key == Key.F12)
+            if (e.Key == Key.F12 && e.KeyModifiers == KeyModifiers.None)
             {
                 new DevToolsWindow().Show();
             }

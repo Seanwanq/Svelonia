@@ -35,10 +35,10 @@ public static class KeyboardExtensions
             }
             else
             {
-                // Fallback for simple key names (e.g. "A", "1")
+                // Fallback for simple key names (e.g. "A", "1") - STRICT MODE
                 if (Enum.TryParse<Key>(gesture, true, out var key))
                 {
-                    match = e.Key == key;
+                    match = e.Key == key && e.KeyModifiers == KeyModifiers.None;
                 }
             }
 
@@ -65,7 +65,7 @@ public static class KeyboardExtensions
     {
         void Handler(object? sender, KeyEventArgs e)
         {
-            if (e.Key == key)
+            if (e.Key == key && e.KeyModifiers == KeyModifiers.None)
             {
                 action();
                 if (handled) e.Handled = true;
