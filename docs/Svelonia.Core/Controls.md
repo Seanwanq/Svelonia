@@ -1,64 +1,42 @@
-[← Back to Svelonia.Core](./README.md)
+# Reactive Control Flow
 
-# Functional Controls
+Svelonia provides dedicated components to handle conditional rendering, lists, and asynchronous data, keeping your UI code declarative.
 
-Svelonia encourages "Logic as UI". Instead of writing complex C# logic in `Render` methods or Code-behind to manipulate the visual tree, you can use functional controls.
+## Conditional Rendering (`Sve.If`)
 
-## IfControl
-
-Conditionally renders a control based on a boolean `State`.
-
-### Basic Usage
+Instead of manual `if` statements that modify the visual tree, use `Sve.If` to reactively toggle elements.
 
 ```csharp
 var isLoggedIn = new State<bool>(false);
 
-var view = new IfControl(
-    condition: isLoggedIn,
-    builder: () => new DashboardView()
+Content = Sve.If(isLoggedIn,
+    () => new TextBlock().SetText("Welcome back!"),
+    elseBuilder: () => new Button().SetContent("Log In")
 );
 ```
-*   **condition**: The boolean state to watch.
-*   **builder**: A factory function that creates the control when the condition becomes `true`. The control is disposed when the condition becomes `false`.
 
-### With Animations
+## Lists and Collections (`Sve.Each`)
 
-`IfControl` supports enter/exit transitions.
+`Sve.Each` is optimized for rendering `StateList<T>`. It performs incremental updates, meaning it only creates controls for new items and moves existing ones, preserving their state (like focus).
 
 ```csharp
-using Svelonia.Core.Animation;
+var todos = new StateList<TodoItem>();
 
-new IfControl(
-    isLoggedIn,
-    () => new DashboardView(),
-    transition: Transition.Fade(duration: 500)
+Content = new StackPanel().SetChildren(
+    Sve.Each(todos, todo => new TodoView(todo))
 );
 ```
 
----
+## Asynchronous Data (`Sve.Await`)
 
-## AwaitControl\<T>
-
-Simplifies handling asynchronous tasks in the UI, managing Loading, Success, and Error states automatically.
-
-### Usage
+Handle `Task<T>` directly in your UI. `Sve.Await` manages the loading and error states for you.
 
 ```csharp
-Task<UserProfile> LoadProfile() => apiClient.GetUserAsync();
+Task<User> userInfoTask = FetchUserAsync();
 
-// Use a factory lambda to allow reloading
-var loader = new AwaitControl<UserProfile>(
-    taskFactory: () => LoadProfile(),
-    loading: () => new TextBlock().SetText("Loading..."),
-    then: (user) => new ProfileCard(user),
-    error: (ex) => new TextBlock().SetText($"Error: {ex.Message}")
+Content = Sve.Await(userInfoTask,
+    then: user => new TextBlock().SetText($"Hello, {user.Name}"),
+    loading: () => new ProgressBar().SetIsIndeterminate(true),
+    error: ex => new TextBlock().SetText($"Error: {ex.Message}").Fg(Brushes.Red)
 );
-
-// Trigger a refresh later
-loader.Reload();
 ```
-
-*   **taskFactory**: A function that returns a `Task<T>`. This is called immediately and whenever `Reload()` is called.
-*   **loading**: (Optional) View to show while the task is running.
-*   **then**: Function to build the Success view using the result.
-*   **error**: (Optional) Function to build the Error view.
