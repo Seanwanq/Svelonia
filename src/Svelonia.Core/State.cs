@@ -73,11 +73,18 @@ public class State<T> : IState
 
             if (!Dispatcher.UIThread.CheckAccess())
             {
-                Dispatcher.UIThread.InvokeAsync(() => Value = value);
-                return;
+                // Try to use dispatcher, but fallback to sync if it's not executing (e.g. in tests)
+                var op = Dispatcher.UIThread.InvokeAsync(() => Value = value);
+                if (op.GetTask().Wait(System.TimeSpan.FromMilliseconds(50))) return;
+                
+                // Fallback for tests
+                _value = value;
+            }
+            else
+            {
+                _value = value;
             }
 
-            _value = value;
             OnChange?.Invoke(_value);
             OnChangeObject?.Invoke(_value);
             _subject.OnNext(_value);

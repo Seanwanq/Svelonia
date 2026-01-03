@@ -43,6 +43,36 @@ public class StateListTests
     }
 
     [Fact]
+    public void Computed_Should_React_To_List_Changes()
+    {
+        var list = new StateList<int>();
+        var sum = new Computed<int>(() => list.Sum());
+
+        Assert.Equal(0, sum.Value);
+
+        list.Add(1);
+        Assert.Equal(1, sum.Value); // 自动追踪成功！
+
+        list.Add(5);
+        Assert.Equal(6, sum.Value);
+
+        list.Remove(1);
+        Assert.Equal(5, sum.Value);
+    }
+
+    [Fact]
+    public void Computed_Should_React_To_Count_Property()
+    {
+        var list = new StateList<string>();
+        var isEmpty = new Computed<bool>(() => list.Count == 0);
+
+        Assert.True(isEmpty.Value);
+
+        list.Add("Hello");
+        Assert.False(isEmpty.Value);
+    }
+
+    [Fact]
     public void EdgeCase_Remove_NonExistent_Item()
     {
         var list = new StateList<int> { 1, 2 };
