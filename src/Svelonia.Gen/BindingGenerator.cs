@@ -401,7 +401,8 @@ public class BindingGenerator : IIncrementalGenerator
             (propName == "RowDefinitions" && typeName.EndsWith("Grid")) ||
             (propName == "Text" && typeName.Contains("TextBox")) ||
             (propName == "IsChecked" && typeName.Contains("ToggleButton")) ||
-            (propName == "Value" && typeName.Contains("RangeBase"))) return;
+            (propName == "Value" && typeName.Contains("RangeBase")) ||
+            (propName == "BorderBrush") || (propName == "BorderThickness")) return;
 
         // SetX
         sb.AppendLine($"        public static T Set{propName}<T>(this T control, {propType} value, {paramType} hover = default, {paramType} pressed = default) where T : {typeName}");

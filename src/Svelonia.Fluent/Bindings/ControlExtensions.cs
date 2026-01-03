@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Data;
+using Avalonia.Media;
 using Svelonia.Core;
 
 namespace Svelonia.Fluent;
@@ -22,24 +24,65 @@ public static class ControlExtensions
     /// </summary>
     public static T BindFocus<T>(this T control, State<bool> focusState) where T : Control
     {
-        void Update(bool focused)
+        Action<bool> update = focused =>
         {
-            if (focused) Avalonia.Threading.Dispatcher.UIThread.Post(() => control.Focus());
-        }
+            if (focused) 
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                    if (control.IsVisible) control.Focus();
+                }, Avalonia.Threading.DispatcherPriority.Input);
+            }
+        };
 
-        focusState.OnChange += Update;
-        
-        // Initial state
-        Update(focusState.Value);
+        focusState.OnChange += update;
+        control.RegisterDisposable(new AnonymousDisposable(() => focusState.OnChange -= update));
 
-        control.DetachedFromVisualTree += (s, e) => focusState.OnChange -= Update;
+        if (focusState.Value) update(true);
 
         return control;
     }
 
-    /// <summary>
-    /// Binds a property to a State with TwoWay mode.
-    /// </summary>
+    private class AnonymousDisposable(Action dispose) : IDisposable
+    {
+        public void Dispose() => dispose();
+    }
+
+    public static T BindVisible<T>(this T control, State<bool> state) where T : Control
+    {
+        control.Bind(Visual.IsVisibleProperty, state.ToBinding());
+        return control;
+    }
+
+    public static T BindBorderBrush<T>(this T control, State<IBrush> state) where T : Control
+    {
+        var prop = control is Border ? Border.BorderBrushProperty : 
+                   control is TemplatedControl ? TemplatedControl.BorderBrushProperty : null;
+        if (prop != null) control.Bind(prop, state.ToBinding());
+        return control;
+    }
+
+    public static T BindBorderThickness<T>(this T control, State<Thickness> state) where T : Control
+    {
+        var prop = control is Border ? Border.BorderThicknessProperty : 
+                   control is TemplatedControl ? TemplatedControl.BorderThicknessProperty : null;
+        if (prop != null) control.Bind(prop, state.ToBinding());
+        return control;
+    }
+
+    public static T SetBorderBrush<T>(this T control, IBrush? value) where T : Control
+    {
+        if (control is Border b) b.BorderBrush = value;
+        else if (control is TemplatedControl tc) tc.BorderBrush = value;
+        return control;
+    }
+
+    public static T SetBorderThickness<T>(this T control, Thickness value) where T : Control
+    {
+        if (control is Border b) b.BorderThickness = value;
+        else if (control is TemplatedControl tc) tc.BorderThickness = value;
+        return control;
+    }
+
     public static T BindTwoWay<T, V>(this T control, AvaloniaProperty<V> property, State<V> state) where T : Control
     {
         var binding = new Binding("Value")
@@ -52,51 +95,73 @@ public static class ControlExtensions
     }
 
     /// <summary>
+    /// Binds the Text property of a TextBlock to a State.
+    /// </summary>
+    public static TextBlock BindText(this TextBlock control, State<string> state)
+    {
+        control.Bind(TextBlock.TextProperty, state.ToBinding());
+        return control;
+    }
+
+    /// <summary>
     /// Binds the Text property of a TextBox to a State with TwoWay mode.
     /// </summary>
-    public static T BindText<T>(this T control, State<string> state) where T : TextBox
+    public static TextBox BindText(this TextBox control, State<string> state)
     {
         return control.BindTwoWay(TextBox.TextProperty, state);
     }
 
     /// <summary>
-    /// Binds the IsChecked property of a ToggleButton (CheckBox/RadioButton) to a State with TwoWay mode.
+    /// Binds a TextBox to a BufferedState, automatically handling Enter (commit) and Escape (reset).
     /// </summary>
-    public static T BindIsChecked<T>(this T control, State<bool?> state) where T : Avalonia.Controls.Primitives.ToggleButton
+    public static TextBox BindBufferedText(this TextBox control, BufferedState<string> buffer, State<bool>? isEditing = null)
     {
-        return control.BindTwoWay(Avalonia.Controls.Primitives.ToggleButton.IsCheckedProperty, state);
+        control.BindText(buffer);
+        
+        control.OnKey("Enter", () => {
+            buffer.Commit();
+            if (isEditing != null) isEditing.Value = false;
+        }, handled: true);
+
+        control.OnKey("Escape", () => {
+            buffer.Reset();
+            if (isEditing != null) isEditing.Value = false;
+        }, handled: true);
+
+        // Optional: Sync buffer when editing starts
+        if (isEditing != null)
+        {
+            isEditing.OnChange += editing => {
+                if (editing) buffer.Reset();
+            };
+        }
+
+        return control;
     }
 
-    /// <summary>
-    /// Binds the Value property of a RangeBase control (Slider/ProgressBar) to a State with TwoWay mode.
-    /// </summary>
-    public static T BindValue<T>(this T control, State<double> state) where T : Avalonia.Controls.Primitives.RangeBase
+    public static T BindIsChecked<T>(this T control, State<bool?> state) where T : ToggleButton
     {
-        return control.BindTwoWay(Avalonia.Controls.Primitives.RangeBase.ValueProperty, state);
+        return control.BindTwoWay(ToggleButton.IsCheckedProperty, state);
     }
 
-    /// <summary>
-    /// Sets the Text property of a TextBox.
-    /// </summary>
-    public static T SetText<T>(this T control, string? value) where T : TextBox
+    public static T BindValue<T>(this T control, State<double> state) where T : RangeBase
+    {
+        return control.BindTwoWay(RangeBase.ValueProperty, state);
+    }
+
+    public static TextBox SetText(this TextBox control, string? value)
     {
         control.Text = value;
         return control;
     }
 
-    /// <summary>
-    /// Sets the IsChecked property of a ToggleButton.
-    /// </summary>
-    public static T SetIsChecked<T>(this T control, bool? value) where T : Avalonia.Controls.Primitives.ToggleButton
+    public static T SetIsChecked<T>(this T control, bool? value) where T : ToggleButton
     {
         control.IsChecked = value;
         return control;
     }
 
-    /// <summary>
-    /// Sets the Value property of a RangeBase control.
-    /// </summary>
-    public static T SetValue<T>(this T control, double value) where T : Avalonia.Controls.Primitives.RangeBase
+    public static T SetValue<T>(this T control, double value) where T : RangeBase
     {
         control.Value = value;
         return control;

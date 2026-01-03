@@ -86,4 +86,14 @@ public static class ClassExtensions
 
         return control;
     }
+
+    /// <summary>
+    /// Shorthand for adding the "trans-all" class to enable transitions.
+    /// </summary>
+    public static T Animate<T>(this T control) where T : Control
+    {
+        if (!control.Classes.Contains("trans-all"))
+            control.Classes.Add("trans-all");
+        return control;
+    }
 }

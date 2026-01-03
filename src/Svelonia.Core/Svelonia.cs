@@ -101,4 +101,24 @@ public static partial class Sve
     {
         return new Effect(action);
     }
+
+    /// <summary>
+    /// Runs the specified action without registering any reactive dependencies.
+    /// </summary>
+    public static void Untrack(Action action)
+    {
+        ObserverContext.PushUntrack();
+        try { action(); }
+        finally { ObserverContext.PopUntrack(); }
+    }
+
+    /// <summary>
+    /// Runs the specified function without registering any reactive dependencies.
+    /// </summary>
+    public static T Untrack<T>(Func<T> func)
+    {
+        ObserverContext.PushUntrack();
+        try { return func(); }
+        finally { ObserverContext.PopUntrack(); }
+    }
 }

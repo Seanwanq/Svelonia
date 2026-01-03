@@ -40,6 +40,15 @@ public static class SveloniaCoreExtensions
     }
 
     /// <summary>
+    /// Registers a disposable resource to be disposed when the control is detached from the visual tree.
+    /// </summary>
+    public static T RegisterDisposable<T>(this T control, IDisposable disposable) where T : Control
+    {
+        control.DetachedFromVisualTree += (s, e) => disposable.Dispose();
+        return control;
+    }
+
+    /// <summary>
     /// Safely detaches a control from its parent (Panel, Decorator, or ContentControl)
     /// </summary>
     public static void DetachFromParent(this Control? control)

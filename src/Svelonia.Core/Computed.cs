@@ -1,38 +1,39 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace Svelonia.Core;
 
-/// <summary>
-/// 
-/// </summary>
-/// <typeparam name="T"></typeparam>
 public class Computed<T> : State<T>, IObserver, IDisposable
 {
     private readonly Func<T> _computer;
     private readonly HashSet<IDependency> _dependencies = new();
+    private bool _isDisposed;
+    private bool _isComputing;
+    private bool _needsRecompute;
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="computer"></param>
     public Computed(Func<T> computer) : base(default!)
     {
         _computer = computer;
         Recompute();
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
     public void OnStateChanged()
     {
+        if (_isDisposed) return;
+        
+        if (_isComputing)
+        {
+            _needsRecompute = true;
+            return;
+        }
+        
         Recompute();
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="dependency"></param>
     public void RegisterDependency(IDependency dependency)
     {
+        if (_isDisposed) return;
         if (_dependencies.Add(dependency))
         {
             dependency.Subscribe(this);
@@ -41,28 +42,45 @@ public class Computed<T> : State<T>, IObserver, IDisposable
 
     private void Recompute()
     {
-        // Unsubscribe from previous dependencies to handle dynamic branching
-        foreach (var d in _dependencies) d.Unsubscribe(this);
-        _dependencies.Clear();
+        if (_isDisposed) return;
+        
+        _isComputing = true;
+        _needsRecompute = false;
 
-        ObserverContext.Push(this);
         try
         {
-            var newValue = _computer();
-            // Update value. If changed, State<T> will notify downstream observers.
-            Value = newValue;
+            foreach (var d in _dependencies) d.Unsubscribe(this);
+            _dependencies.Clear();
+
+            ObserverContext.Push(this);
+            try
+            {
+                T? newValue = default;
+                ObserverContext.ForceTrack(() => {
+                    newValue = _computer();
+                });
+                Value = newValue!;
+            }
+            finally
+            {
+                ObserverContext.Pop();
+            }
         }
         finally
         {
-            ObserverContext.Pop();
+            _isComputing = false;
+            
+            if (_needsRecompute)
+            {
+                Recompute();
+            }
         }
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
     public void Dispose()
     {
+        if (_isDisposed) return;
+        _isDisposed = true;
         foreach (var d in _dependencies) d.Unsubscribe(this);
         _dependencies.Clear();
     }

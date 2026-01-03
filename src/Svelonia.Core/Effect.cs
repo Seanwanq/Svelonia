@@ -3,34 +3,35 @@ using System.Collections.Generic;
 
 namespace Svelonia.Core;
 
-/// <summary>
-/// A reactive effect that runs immediately and re-runs whenever its dependencies change.
-/// Used for side effects (e.g. logging, manual DOM manipulation, focus management).
-/// </summary>
 public class Effect : IObserver, IDisposable
 {
     private readonly Action _action;
     private readonly HashSet<IDependency> _dependencies = new();
     private bool _isDisposed;
+    private bool _isRunning;
+    private bool _needsReRun;
+    private readonly string _id = Guid.NewGuid().ToString()[..4];
 
-    /// <summary>
-    /// Creates and starts a new Effect.
-    /// </summary>
-    /// <param name="action">The action to execute.</param>
     public Effect(Action action)
     {
         _action = action;
         Run();
     }
 
-    /// <inheritdoc />
     public void OnStateChanged()
     {
         if (_isDisposed) return;
+        
+        if (_isRunning)
+        {
+            // LogDebug($"Effect[{_id}] marked dirty during run");
+            _needsReRun = true;
+            return;
+        }
+        
         Run();
     }
 
-    /// <inheritdoc />
     public void RegisterDependency(IDependency dependency)
     {
         if (_isDisposed) return;
@@ -42,24 +43,40 @@ public class Effect : IObserver, IDisposable
 
     private void Run()
     {
-        // Unsubscribe from previous dependencies to handle dynamic branching
-        foreach (var d in _dependencies) d.Unsubscribe(this);
-        _dependencies.Clear();
+        if (_isDisposed) return;
+        
+        _isRunning = true;
+        _needsReRun = false;
 
-        ObserverContext.Push(this);
-        try
-        {
-            _action();
+        try {
+            // Unsubscribe to re-track
+            foreach (var d in _dependencies) d.Unsubscribe(this);
+            _dependencies.Clear();
+
+            ObserverContext.Push(this);
+            try
+            {
+                ObserverContext.ForceTrack(() => {
+                    _action();
+                });
+            }
+            finally
+            {
+                ObserverContext.Pop();
+            }
         }
-        finally
-        {
-            ObserverContext.Pop();
+        finally {
+            _isRunning = false;
+            if (_needsReRun)
+            {
+                // LogDebug($"Effect[{_id}] re-running due to dirty bit");
+                Run();
+            }
         }
     }
 
-    /// <summary>
-    /// Stops the effect and unsubscribes from all dependencies.
-    /// </summary>
+    private void LogDebug(string msg) => Console.WriteLine($"[DEBUG] [Effect] {msg}");
+
     public void Dispose()
     {
         if (_isDisposed) return;

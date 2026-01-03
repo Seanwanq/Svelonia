@@ -1,137 +1,112 @@
 using Avalonia.Threading;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Runtime.CompilerServices;
 
 namespace Svelonia.Core;
 
-/// <summary>
-/// Base interface for all state objects
-/// </summary>
-public interface IState : IDependency, IObservable<object?>
+public interface IState : IDependency, IObservable<object?>, INotifyPropertyChanged
 {
-    /// <summary>
-    /// Gets the current value as an object
-    /// </summary>
     object? ValueObject { get; }
-    
-    /// <summary>
-    /// Triggered when the value changes
-    /// </summary>
     event Action<object?>? OnChangeObject;
 }
 
-/// <summary>
-/// 
-/// </summary>
-/// <typeparam name="T"></typeparam>
 public class State<T> : IState
 {
+    private static int _globalStateId = 0;
+    public int StateId { get; } = ++_globalStateId;
+
     private T _value;
     private readonly HashSet<IObserver> _observers = new();
     private readonly BehaviorSubject<object?> _subject;
 
-    /// <summary>
-    /// Initializes a new instance of the State class.
-    /// </summary>
-    /// <param name="initialValue"></param>
+    public event PropertyChangedEventHandler? PropertyChanged;
+
     public State(T initialValue)
     {
         _value = initialValue;
         _subject = new BehaviorSubject<object?>(initialValue);
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
     public event Action<T>? OnChange;
-    
-    /// <inheritdoc />
     public event Action<object?>? OnChangeObject;
-
-    /// <summary>
-    /// Debugging support
-    /// </summary>
     public string? DebugName { get; set; }
-
-    /// <inheritdoc />
     public object? ValueObject => Value;
 
-    /// <summary>
-    /// 
-    /// </summary>
+    protected T InternalValue
+    {
+        get => _value;
+        set => _value = value;
+    }
+
+    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    public void ForceUpdate(T newValue)
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.InvokeAsync(() => ForceUpdate(newValue));
+            return;
+        }
+
+        _value = newValue;
+        OnChange?.Invoke(_value);
+        OnChangeObject?.Invoke(_value);
+        _subject.OnNext(_value);
+        
+        OnPropertyChanged(nameof(Value));
+        NotifyObservers();
+        
+        StateDebug.NotifyChange(this, _value);
+    }
+
     public T Value
     {
         get
         {
-            ObserverContext.Current?.RegisterDependency(this);
+            var observer = ObserverContext.Current;
+            if (observer != null)
+            {
+                // LogDebug($"State[{StateId}]({DebugName}) being read by Observer");
+                observer.RegisterDependency(this);
+            }
             return _value;
         }
         set
         {
             if (Equals(_value, value)) return;
-
-            if (!Dispatcher.UIThread.CheckAccess())
-            {
-                // Try to use dispatcher, but fallback to sync if it's not executing (e.g. in tests)
-                var op = Dispatcher.UIThread.InvokeAsync(() => Value = value);
-                if (op.GetTask().Wait(System.TimeSpan.FromMilliseconds(50))) return;
-                
-                // Fallback for tests
-                _value = value;
-            }
-            else
-            {
-                _value = value;
-            }
-
-            OnChange?.Invoke(_value);
-            OnChangeObject?.Invoke(_value);
-            _subject.OnNext(_value);
-            NotifyObservers();
-
-            StateDebug.NotifyChange(this, _value);
+            ForceUpdate(value);
         }
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="observer"></param>
-    public void Subscribe(IObserver observer)
-    {
-        _observers.Add(observer);
-    }
+    public void Subscribe(IObserver observer) => _observers.Add(observer);
+    public void Unsubscribe(IObserver observer) => _observers.Remove(observer);
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="observer"></param>
-    public void Unsubscribe(IObserver observer)
-    {
-        _observers.Remove(observer);
-    }
-
-    /// <summary>
-    /// Manually trigger the OnChange event and notify observers.
-    /// </summary>
     public void Notify()
     {
-        OnChange?.Invoke(_value);
+        OnPropertyChanged(nameof(Value));
+        _subject.OnNext(_value);
         NotifyObservers();
     }
 
-    private void NotifyObservers()
+    protected void NotifyObservers()
     {
         if (_observers.Count == 0) return;
-        foreach (var observer in new List<IObserver>(_observers))
+        var targets = _observers.ToList();
+        foreach (var observer in targets)
         {
             observer.OnStateChanged();
         }
     }
 
-    public IDisposable Subscribe(System.IObserver<object?> observer)
-    {
-        return _subject.Subscribe(observer);
-    }
+    private void LogDebug(string msg) => Console.WriteLine($"[DEBUG] [State] {msg}");
+
+    public IDisposable Subscribe(System.IObserver<object?> observer) => _subject.Subscribe(observer);
 }

@@ -1,104 +1,63 @@
-[← Back to Svelonia.Fluent](./README.md)
+# Fluent Bindings & Events
 
-# Bindings
+## Data Binding
 
-Svelonia.Fluent integrates tightly with `Svelonia.Core` to provide seamless data binding.
-
-## Explicit Binding
-
-Most generated fluent methods have a corresponding `BindX` method that accepts `State<T>`. When used, the property is automatically bound to the state.
-
+### One-Way Binding
 ```csharp
-State<double> width = new(100);
-
-new Rectangle()
-    .BindWidth(width)      // Binds Width property to state
-    .BindHeight(width);    // Binds Height property to state
+new TextBlock().BindText(node.DisplayText);
 ```
 
-## Text Binding
-
-### TextBlock (One-Way)
-
+### Two-Way Binding
+Commonly used with `TextBox`, `CheckBox`, and `Slider`.
 ```csharp
-// Bind text content to a string state or computed value
-new TextBlock().BindText(myState);
+new TextBox().BindText(node.Text);
 ```
 
-## TextBox (Two-Way)
-
-For input controls like `TextBox`, `CheckBox`, and `Slider`, Svelonia provides specialized two-way bindings. Changes in the UI update the State, and changes in the State update the UI.
-
+### Buffered Binding (Editing Pattern)
+For scenarios where you want to edit a value but allow cancellation:
 ```csharp
-var name = new State<string>("Alice");
+var buffer = node.Text.ToBuffered();
+new TextBox().BindBufferedText(buffer, node.IsEditing);
+```
+`BindBufferedText` automatically handles:
+- **Enter**: Commits the buffer and sets `isEditing` to false.
+- **Escape**: Resets the buffer and sets `isEditing` to false.
 
-new TextBox()
-    .BindText(name); // Two-way binding to node.Text.Value
+---
+
+## Universal Event API
+
+Avoid standard C# event syntax (`+=`) to keep your code fluent. Svelonia provides `.OnXXX` extensions for all routed events.
+
+### Standard Events
+```csharp
+new Button()
+    .OnClick(() => HandleClick())
+    .OnPointerPressed(e => Log(e))
+    .OnKeyDown(e => HandleKey(e));
 ```
 
-### Supported Two-Way Shorthands:
-- `.BindText(State<string>)`: For `TextBox`.
-- `.BindIsChecked(State<bool?>)`: For `CheckBox` or `RadioButton`.
-- `.BindValue(State<double>)`: For `Slider` or `ProgressBar`.
-
-## Focus Management
-
-Svelonia provides reactive focus management to handle common interaction patterns like "Create and Edit".
-
-### AutoFocus
-Automatically focus a control as soon as it is added to the UI.
-
+### Accessing the Sender
+If you need to access the control itself within the handler:
 ```csharp
-new TextBox().AutoFocus();
+new Grid()
+    .OnPointerMoved((sender, e) => {
+        var pos = e.GetPosition(sender);
+    });
 ```
 
-### BindFocus
-Link the keyboard focus of a control to a boolean state.
-
+### Custom/Routed Events
+You can attach any Avalonia `RoutedEvent`:
 ```csharp
-var isEditing = new State<bool>(false);
-
-new TextBox()
-    .BindFocus(isEditing); // Focuses automatically when isEditing becomes true
+control.On(Control.RequestBringIntoViewEvent, e => e.Handled = true);
 ```
 
-## Content Binding
+---
 
-You can bind the content of a Panel or ContentControl to a state using the `Bind` prefix.
-
-```csharp
-State<Control> currentView = new(new LoginView());
-
-new ContentControl().BindContent(currentView);
-```
-
-Or for lists of children in a Panel:
+## Lifecycle Events
 
 ```csharp
-State<IEnumerable<Control>> items = new(...);
-
-new StackPanel().BindChildren(items);
-```
-
-## Keyboard Events
-
-You can handle keyboard events fluently using the `.OnKey(...)` extension.
-
-### Basic Key Binding
-Support for string parsing (KeyGesture) and simple key names.
-
-```csharp
-new TextBox()
-    .OnKey("Enter", SubmitForm) // Matches Enter key
-    .OnKey("Ctrl+S", Save);     // Matches Ctrl+S gesture
-```
-
-### Focusing
-To ensure a control (like a Panel or Border) can receive keyboard events, use `.SetFocusable()`.
-
-```csharp
-new StackPanel()
-    .SetFocusable() // Enables focus
-    .OnKey("A", () => Console.WriteLine("A pressed"))
-    .SetChildren(...);
+new MyComponent()
+    .OnLoaded(e => InitializeData())
+    .RegisterDisposable(someSubscription);
 ```
