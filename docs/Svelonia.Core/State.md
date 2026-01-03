@@ -71,14 +71,18 @@ var view = new Computed<string>(() => {
 
 ## StateList\<T>
 
-A reactive collection wrapper around `ObservableCollection<T>`. It ensures collection change notifications are marshaled to the UI thread.
+A reactive collection wrapper around `ObservableCollection<T>`. It ensures collection change notifications are marshaled to the UI thread and **automatically integrates with the dependency tracking system**.
 
 ### Usage
 
 ```csharp
 var items = new StateList<string>();
 
-items.Add("Item 1"); // Safe to call from background threads
+// Accessing properties like .Count or iterating within a Computed context 
+// will automatically register the list as a dependency.
+var itemCountLabel = new Computed<string>(() => $"Total items: {items.Count}");
+
+items.Add("Item 1"); // sumLabel updates automatically
 ```
 
 ### Batch Updates
@@ -87,6 +91,31 @@ Use `AddRange` to add multiple items while triggering only one UI refresh notifi
 ```csharp
 items.AddRange(new[] { "A", "B", "C" });
 ```
+
+---
+
+## Side Effects: Sve.Effect
+
+`Sve.Effect` allows you to execute code in response to state changes. Unlike `Computed`, it is intended for side effects (e.g., logging, manual DOM manipulation, or focus management).
+
+### Usage
+
+```csharp
+var isEditing = new State<bool>(false);
+
+// Runs immediately once, and re-runs whenever 'isEditing' changes.
+Sve.Effect(() => {
+    Console.WriteLine($"Editing state is now: {isEditing.Value}");
+    if (isEditing.Value) {
+        // Perform non-pure actions here
+    }
+});
+```
+
+### Features
+- **Automatic Cleanup**: It automatically unsubscribes from old dependencies before re-running.
+- **Immediate Execution**: It runs the action once upon creation.
+- **Disposable**: It returns an `IDisposable` that can be used to stop the effect.
 
 ---
 

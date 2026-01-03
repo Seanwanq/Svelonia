@@ -27,13 +27,39 @@ new TextBlock().BindText(myState);
 
 ## TextBox (Two-Way)
 
-For input controls like `TextBox`, use `.BindText` to enable two-way binding. Changes in the UI update the State, and changes in the State update the UI.
+For input controls like `TextBox`, `CheckBox`, and `Slider`, Svelonia provides specialized two-way bindings. Changes in the UI update the State, and changes in the State update the UI.
 
 ```csharp
 var name = new State<string>("Alice");
 
 new TextBox()
-    .BindText(name); // Two-way
+    .BindText(name); // Two-way binding to node.Text.Value
+```
+
+### Supported Two-Way Shorthands:
+- `.BindText(State<string>)`: For `TextBox`.
+- `.BindIsChecked(State<bool?>)`: For `CheckBox` or `RadioButton`.
+- `.BindValue(State<double>)`: For `Slider` or `ProgressBar`.
+
+## Focus Management
+
+Svelonia provides reactive focus management to handle common interaction patterns like "Create and Edit".
+
+### AutoFocus
+Automatically focus a control as soon as it is added to the UI.
+
+```csharp
+new TextBox().AutoFocus();
+```
+
+### BindFocus
+Link the keyboard focus of a control to a boolean state.
+
+```csharp
+var isEditing = new State<bool>(false);
+
+new TextBox()
+    .BindFocus(isEditing); // Focuses automatically when isEditing becomes true
 ```
 
 ## Content Binding

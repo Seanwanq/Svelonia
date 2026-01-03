@@ -89,15 +89,19 @@ new Border()
     .SetPadding(G.Small);    // Generated Setter
 ```
 
-### Configuration
+## Canvas Layout
 
-You can override these values at application startup to match your design system:
+For controls inside a `Canvas`, Svelonia provides reactive layout helpers for Attached Properties.
 
 ```csharp
-// App.cs or Program.cs
-G.Small = 10.0;
-G.Medium = 20.0;
-G.RadiusSmall = 6.0;
+var x = new State<double>(50);
+var y = new State<double>(50);
+
+new Border()
+    .BindLeft(x)   // Binds Canvas.Left to state
+    .BindTop(y)    // Binds Canvas.Top to state
+    .SetRight(100) // Static setter for Canvas.Right
+    .SetBottom(100);
 ```
 
 ## Drill-Down Styling (Advanced)
