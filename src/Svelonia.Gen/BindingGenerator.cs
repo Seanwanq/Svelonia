@@ -399,7 +399,9 @@ public class BindingGenerator : IIncrementalGenerator
             (propName == "Children" && typeName.EndsWith("Panel")) ||
             (propName == "ColumnDefinitions" && typeName.EndsWith("Grid")) ||
             (propName == "RowDefinitions" && typeName.EndsWith("Grid")) ||
-            (propName == "Background") || (propName == "BoxShadow")) return;
+            (propName == "Text" && typeName.Contains("TextBox")) ||
+            (propName == "IsChecked" && typeName.Contains("ToggleButton")) ||
+            (propName == "Value" && typeName.Contains("RangeBase"))) return;
 
         // SetX
         sb.AppendLine($"        public static T Set{propName}<T>(this T control, {propType} value, {paramType} hover = default, {paramType} pressed = default) where T : {typeName}");
