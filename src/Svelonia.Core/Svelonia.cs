@@ -139,4 +139,17 @@ public static partial class Sve
             ObserverContext.PopUntrack();
         }
     }
+
+    /// <summary>
+    /// Reactively flattens a tree structure into a flat list.
+    /// </summary>
+    public static Computed<IEnumerable<object>> FlattenTree<TNode>(
+        TNode root,
+        Func<TNode, IEnumerable<TNode>> getChildren,
+        Func<TNode, bool>? isExpanded = null,
+        Func<TNode, TNode, object>? projectEdge = null
+    )
+    {
+        return TreeFlattener.Flatten(root, getChildren, isExpanded, projectEdge);
+    }
 }

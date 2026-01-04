@@ -9,6 +9,12 @@ public class StateList<T> : ObservableCollection<T>, IDependency, IEnumerable<T>
 {
     private readonly HashSet<IObserver> _observers = new();
 
+    /// <summary>
+    /// A reactive state that increments whenever the collection changes.
+    /// Accessing Version.Value inside a Computed will register a dependency on the collection structure.
+    /// </summary>
+    public State<int> Version { get; } = new(0);
+
     public StateList() { }
     public StateList(IEnumerable<T> collection) : base(collection) { }
 
@@ -23,6 +29,7 @@ public class StateList<T> : ObservableCollection<T>, IDependency, IEnumerable<T>
         get
         {
             Track();
+            var _ = Version.Value; // Also track version for structural changes
             return base.Count;
         }
     }
@@ -32,6 +39,7 @@ public class StateList<T> : ObservableCollection<T>, IDependency, IEnumerable<T>
         get
         {
             Track();
+            var _ = Version.Value;
             return base[index];
         }
         set => base[index] = value;
@@ -40,12 +48,14 @@ public class StateList<T> : ObservableCollection<T>, IDependency, IEnumerable<T>
     public new IEnumerator<T> GetEnumerator()
     {
         Track();
+        var _ = Version.Value;
         return base.GetEnumerator();
     }
 
     System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
     {
         Track();
+        var _ = Version.Value;
         return base.GetEnumerator();
     }
 
@@ -65,6 +75,8 @@ public class StateList<T> : ObservableCollection<T>, IDependency, IEnumerable<T>
 
     private void NotifyObservers()
     {
+        Version.Value++; // Increment version on every notification
+        
         if (_observers.Count == 0) return;
         var targets = _observers.ToList();
         foreach (var observer in targets)
