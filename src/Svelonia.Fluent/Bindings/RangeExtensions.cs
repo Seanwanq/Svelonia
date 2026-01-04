@@ -5,13 +5,15 @@ namespace Svelonia.Fluent;
 
 public static class RangeExtensions
 {
-    public static T BindValue<T>(this T control, State<double> state) where T : RangeBase
+    public static T BindValue<T>(this T control, State<double> state)
+        where T : RangeBase
     {
         bool isUpdating = false;
 
         void StateHandler(double val)
         {
-            if (isUpdating) return;
+            if (isUpdating)
+                return;
             isUpdating = true;
             control.Value = val;
             isUpdating = false;
@@ -21,7 +23,8 @@ public static class RangeExtensions
         {
             if (e.Property == RangeBase.ValueProperty)
             {
-                if (isUpdating) return;
+                if (isUpdating)
+                    return;
                 isUpdating = true;
                 state.Value = control.Value;
                 isUpdating = false;

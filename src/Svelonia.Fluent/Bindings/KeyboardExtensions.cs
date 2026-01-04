@@ -4,10 +4,11 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Svelonia.Core;
 using Svelonia.Data;
+
 namespace Svelonia.Fluent;
 
 /// <summary>
-/// 
+///
 /// </summary>
 public static class KeyboardExtensions
 {
@@ -19,12 +20,22 @@ public static class KeyboardExtensions
     /// <param name="action">The action to execute.</param>
     /// <param name="handled">If true, marks the event as handled (prevent default). Default is true.</param>
     /// <param name="tunnel">If true, uses PreviewKeyDown (Tunneling) instead of KeyDown (Bubbling).</param>
-    public static T OnKey<T>(this T control, string gesture, Action action, bool handled = true, bool tunnel = false)
+    public static T OnKey<T>(
+        this T control,
+        string gesture,
+        Action action,
+        bool handled = true,
+        bool tunnel = false
+    )
         where T : Control
     {
         // Try parsing as gesture first
         KeyGesture? keyGesture = null;
-        try { keyGesture = KeyGesture.Parse(gesture); } catch { }
+        try
+        {
+            keyGesture = KeyGesture.Parse(gesture);
+        }
+        catch { }
 
         void Handler(object? sender, KeyEventArgs e)
         {
@@ -45,7 +56,8 @@ public static class KeyboardExtensions
             if (match)
             {
                 action();
-                if (handled) e.Handled = true;
+                if (handled)
+                    e.Handled = true;
             }
         }
 
@@ -60,7 +72,13 @@ public static class KeyboardExtensions
     /// <summary>
     /// Binds a specific key to an action.
     /// </summary>
-    public static T OnKey<T>(this T control, Key key, Action action, bool handled = true, bool tunnel = false)
+    public static T OnKey<T>(
+        this T control,
+        Key key,
+        Action action,
+        bool handled = true,
+        bool tunnel = false
+    )
         where T : Control
     {
         void Handler(object? sender, KeyEventArgs e)
@@ -68,7 +86,8 @@ public static class KeyboardExtensions
             if (e.Key == key && e.KeyModifiers == KeyModifiers.None)
             {
                 action();
-                if (handled) e.Handled = true;
+                if (handled)
+                    e.Handled = true;
             }
         }
 
@@ -83,34 +102,60 @@ public static class KeyboardExtensions
     /// <summary>
     /// Binds a key gesture to a Mediator Command.
     /// </summary>
-    public static T OnKey<T>(this T control, string gesture, ICommand command, bool handled = true, bool tunnel = false)
+    public static T OnKey<T>(
+        this T control,
+        string gesture,
+        ICommand command,
+        bool handled = true,
+        bool tunnel = false
+    )
         where T : Control
     {
-        return control.OnKey(gesture, () =>
-        {
-            // Resolve mediator via ISveloniaApplication (AOT-Safe)
-            if (Avalonia.Application.Current is ISveloniaApplication app &&
-                app.Services?.GetService(typeof(IMediator)) is IMediator mediator)
+        return control.OnKey(
+            gesture,
+            () =>
             {
-                mediator.Send(command);
-            }
-        }, handled, tunnel);
+                // Resolve mediator via ISveloniaApplication (AOT-Safe)
+                if (
+                    Avalonia.Application.Current is ISveloniaApplication app
+                    && app.Services?.GetService(typeof(IMediator)) is IMediator mediator
+                )
+                {
+                    mediator.Send(command);
+                }
+            },
+            handled,
+            tunnel
+        );
     }
 
     /// <summary>
     /// Binds a key gesture to a Mediator Command Factory.
     /// </summary>
-    public static T OnKey<T>(this T control, string gesture, Func<ICommand> commandFactory, bool handled = true, bool tunnel = false)
+    public static T OnKey<T>(
+        this T control,
+        string gesture,
+        Func<ICommand> commandFactory,
+        bool handled = true,
+        bool tunnel = false
+    )
         where T : Control
     {
-        return control.OnKey(gesture, () =>
-        {
-            // Resolve mediator via ISveloniaApplication (AOT-Safe)
-            if (Avalonia.Application.Current is ISveloniaApplication app &&
-                app.Services?.GetService(typeof(IMediator)) is IMediator mediator)
+        return control.OnKey(
+            gesture,
+            () =>
             {
-                mediator.Send(commandFactory());
-            }
-        }, handled, tunnel);
+                // Resolve mediator via ISveloniaApplication (AOT-Safe)
+                if (
+                    Avalonia.Application.Current is ISveloniaApplication app
+                    && app.Services?.GetService(typeof(IMediator)) is IMediator mediator
+                )
+                {
+                    mediator.Send(commandFactory());
+                }
+            },
+            handled,
+            tunnel
+        );
     }
 }

@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Svelonia.Controls/Svelonia.Controls.csproj" />
     <Project Path="src/Svelonia.Core/Svelonia.Core.csproj" />
     <Project Path="src/Svelonia.Data/Svelonia.Data.csproj" />
     <Project Path="src/Svelonia.DevTools/Svelonia.DevTools.csproj" />

@@ -5,20 +5,19 @@ using Svelonia.Core.Controls;
 namespace Svelonia.Core;
 
 /// <summary>
-/// 
+///
 /// </summary>
-public static partial class Svelonia
-{
-}
+public static partial class Svelonia { }
 
 /// <summary>
-/// 
+///
 /// </summary>
 public static partial class Sve
 {
     private static IServiceProvider? _serviceProvider;
+
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <param name="provider"></param>
     public static void SetServiceProvider(IServiceProvider provider)
@@ -27,7 +26,7 @@ public static partial class Sve
     }
 
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
@@ -37,7 +36,7 @@ public static partial class Sve
     }
 
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <param name="condition"></param>
     /// <param name="builder"></param>
@@ -45,13 +44,19 @@ public static partial class Sve
     /// <param name="animate"></param>
     /// <param name="transition"></param>
     /// <returns></returns>
-    public static Control If(State<bool> condition, Func<Control> builder, Func<Control>? elseBuilder = null, bool animate = false, Animation.SveloniaTransition? transition = null)
+    public static Control If(
+        State<bool> condition,
+        Func<Control> builder,
+        Func<Control>? elseBuilder = null,
+        bool animate = false,
+        Animation.SveloniaTransition? transition = null
+    )
     {
         return new IfControl(condition, builder, elseBuilder, animate, transition);
     }
 
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="items"></param>
@@ -62,12 +67,12 @@ public static partial class Sve
         return new ItemsControl
         {
             ItemsSource = items,
-            ItemTemplate = new FuncDataTemplate<T>((item, ns) => template(item))
+            ItemTemplate = new FuncDataTemplate<T>((item, ns) => template(item)),
         };
     }
 
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="task"></param>
@@ -79,7 +84,8 @@ public static partial class Sve
         Task<T> task,
         Func<T, Control> then,
         Func<Control>? loading = null,
-        Func<Exception, Control>? error = null)
+        Func<Exception, Control>? error = null
+    )
     {
         return new AwaitControl<T>(task, loading, then, error);
     }
@@ -108,8 +114,14 @@ public static partial class Sve
     public static void Untrack(Action action)
     {
         ObserverContext.PushUntrack();
-        try { action(); }
-        finally { ObserverContext.PopUntrack(); }
+        try
+        {
+            action();
+        }
+        finally
+        {
+            ObserverContext.PopUntrack();
+        }
     }
 
     /// <summary>
@@ -118,7 +130,13 @@ public static partial class Sve
     public static T Untrack<T>(Func<T> func)
     {
         ObserverContext.PushUntrack();
-        try { return func(); }
-        finally { ObserverContext.PopUntrack(); }
+        try
+        {
+            return func();
+        }
+        finally
+        {
+            ObserverContext.PopUntrack();
+        }
     }
 }

@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageId>Svelonia.DevTools</PackageId>
-    <Description>Developer Tools (State Inspector) for Svelonia applications.</Description>
+    <PackageId>Svelonia.Controls</PackageId>
+    <Description>Advanced, scenario-specific controls for Svelonia (e.g. InfiniteCanvas).</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
@@ -15,10 +15,5 @@
   <ItemGroup>
     <ProjectReference Include="..\Svelonia.Core\Svelonia.Core.csproj" />
     <ProjectReference Include="..\Svelonia.Fluent\Svelonia.Fluent.csproj" />
-    <ProjectReference
-      Include="..\Svelonia.Gen\Svelonia.Gen.csproj"
-      OutputItemType="Analyzer"
-      ReferenceOutputAssembly="false"
-    />
   </ItemGroup>
 </Project>

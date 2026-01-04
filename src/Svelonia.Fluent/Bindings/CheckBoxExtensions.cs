@@ -1,27 +1,29 @@
 using Avalonia.Controls;
-
 using Svelonia.Core;
+
 namespace Svelonia.Fluent;
 
 /// <summary>
-/// 
+///
 /// </summary>
 public static class CheckBoxExtensions
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="control"></param>
     /// <param name="state"></param>
     /// <returns></returns>
-    public static T IsChecked<T>(this T control, State<bool> state) where T : CheckBox
+    public static T IsChecked<T>(this T control, State<bool> state)
+        where T : CheckBox
     {
         bool isUpdating = false;
 
         void StateHandler(bool val)
         {
-            if (isUpdating) return;
+            if (isUpdating)
+                return;
             isUpdating = true;
             control.IsChecked = val;
             isUpdating = false;
@@ -31,7 +33,8 @@ public static class CheckBoxExtensions
         {
             if (e.Property == CheckBox.IsCheckedProperty)
             {
-                if (isUpdating) return;
+                if (isUpdating)
+                    return;
                 isUpdating = true;
                 state.Value = control.IsChecked ?? false;
                 isUpdating = false;

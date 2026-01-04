@@ -1,3 +1,5 @@
+using System;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
@@ -6,15 +8,13 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Media;
 using Svelonia.Core;
-using System;
-using System.Threading.Tasks;
 
 namespace Svelonia.Fluent;
 
 public enum LiveDragBoundaryMode
 {
     Clamp, // 撞墙停下
-    Clip   // 自由出入，但视觉裁剪
+    Clip, // 自由出入，但视觉裁剪
 }
 
 public static class MultiTouchDragExtensions
@@ -22,7 +22,7 @@ public static class MultiTouchDragExtensions
     private class LiveDragState
     {
         public Point StartPointerPosition { get; set; }
-        public Point StartPointerPositionOffset { get; set; } 
+        public Point StartPointerPositionOffset { get; set; }
         public double InitialTransformX { get; set; }
         public double InitialTransformY { get; set; }
         public TranslateTransform Transform { get; set; } = new();
@@ -32,33 +32,38 @@ public static class MultiTouchDragExtensions
         public AdornerLayer? Adorner { get; set; }
     }
 
-    public static T LiveDraggable<T>(this T control, 
+    public static T LiveDraggable<T>(
+        this T control,
         Control? handle = null,
-        State<bool>? enable = null, 
-        bool animateBack = true, 
+        State<bool>? enable = null,
+        bool animateBack = true,
         Func<T, Control>? ghostTransform = null,
         Func<Point, Point>? constrain = null,
         Control? constrainTo = null,
         LiveDragBoundaryMode boundaryMode = LiveDragBoundaryMode.Clamp,
         Action? onStart = null,
         Action? onEnd = null,
-        Action<Point>? onMove = null) where T : Control
+        Action<Point>? onMove = null
+    )
+        where T : Control
     {
         var state = new LiveDragState();
         var trigger = handle ?? control;
 
         trigger.PointerPressed += (s, e) =>
         {
-            if (enable != null && !enable.Value) return;
-            if (state.IsDragging) return;
+            if (enable != null && !enable.Value)
+                return;
+            if (state.IsDragging)
+                return;
 
             var parent = control.Parent as Visual;
             var point = e.GetCurrentPoint(parent);
-            
+
             if (point.Properties.IsLeftButtonPressed)
             {
                 EnsureTransform(control, state);
-                
+
                 state.Transform.Transitions = null;
 
                 state.IsDragging = true;
@@ -87,12 +92,13 @@ public static class MultiTouchDragExtensions
 
         trigger.PointerMoved += (s, e) =>
         {
-            if (!state.IsDragging || e.Pointer.Id != state.PointerId) return;
+            if (!state.IsDragging || e.Pointer.Id != state.PointerId)
+                return;
 
             var parent = control.Parent as Visual;
             var point = e.GetCurrentPoint(parent);
             var currentPos = point.Position;
-            
+
             var deltaX = currentPos.X - state.StartPointerPosition.X;
             var deltaY = currentPos.Y - state.StartPointerPosition.Y;
 
@@ -101,7 +107,7 @@ public static class MultiTouchDragExtensions
 
             if (constrainTo != null && boundaryMode == LiveDragBoundaryMode.Clamp)
             {
-                var originInConstrainer = control.TranslatePoint(new Point(0,0), constrainTo);
+                var originInConstrainer = control.TranslatePoint(new Point(0, 0), constrainTo);
                 if (originInConstrainer.HasValue)
                 {
                     var absOriginX = originInConstrainer.Value.X - state.Transform.X;
@@ -133,7 +139,8 @@ public static class MultiTouchDragExtensions
 
         async void EndDrag(IPointer pointer)
         {
-            if (!state.IsDragging) return;
+            if (!state.IsDragging)
+                return;
             state.IsDragging = false;
             state.PointerId = -1;
             pointer.Capture(null);
@@ -143,15 +150,18 @@ public static class MultiTouchDragExtensions
                 state.Adorner.Children.Remove(state.Ghost);
                 state.Ghost = null;
             }
-            
+
             onEnd?.Invoke();
 
             if (animateBack)
             {
                 // 监听动画过程中的变化，实时更新裁剪
-                EventHandler<AvaloniaPropertyChangedEventArgs> handler = (s, args) => 
+                EventHandler<AvaloniaPropertyChangedEventArgs> handler = (s, args) =>
                 {
-                    if (args.Property == TranslateTransform.XProperty || args.Property == TranslateTransform.YProperty)
+                    if (
+                        args.Property == TranslateTransform.XProperty
+                        || args.Property == TranslateTransform.YProperty
+                    )
                     {
                         UpdateVisuals(state, control, constrainTo, boundaryMode);
                     }
@@ -161,14 +171,24 @@ public static class MultiTouchDragExtensions
                 var duration = TimeSpan.FromMilliseconds(250);
                 state.Transform.Transitions = new Transitions
                 {
-                    new DoubleTransition { Property = TranslateTransform.XProperty, Duration = duration, Easing = new QuadraticEaseOut() },
-                    new DoubleTransition { Property = TranslateTransform.YProperty, Duration = duration, Easing = new QuadraticEaseOut() }
+                    new DoubleTransition
+                    {
+                        Property = TranslateTransform.XProperty,
+                        Duration = duration,
+                        Easing = new QuadraticEaseOut(),
+                    },
+                    new DoubleTransition
+                    {
+                        Property = TranslateTransform.YProperty,
+                        Duration = duration,
+                        Easing = new QuadraticEaseOut(),
+                    },
                 };
                 state.Transform.X = 0;
                 state.Transform.Y = 0;
 
                 await Task.Delay(duration);
-                
+
                 state.Transform.PropertyChanged -= handler;
                 state.Transform.Transitions = null;
             }
@@ -177,13 +197,26 @@ public static class MultiTouchDragExtensions
             control.Clip = null;
         }
 
-        control.PointerReleased += (s, e) => { if(e.Pointer.Id == state.PointerId) EndDrag(e.Pointer); };
-        control.PointerCaptureLost += (s, e) => { if(e.Pointer.Id == state.PointerId) EndDrag(e.Pointer); };
+        control.PointerReleased += (s, e) =>
+        {
+            if (e.Pointer.Id == state.PointerId)
+                EndDrag(e.Pointer);
+        };
+        control.PointerCaptureLost += (s, e) =>
+        {
+            if (e.Pointer.Id == state.PointerId)
+                EndDrag(e.Pointer);
+        };
 
         return control;
     }
 
-    private static void UpdateVisuals(LiveDragState state, Control control, Control? constrainTo, LiveDragBoundaryMode mode)
+    private static void UpdateVisuals(
+        LiveDragState state,
+        Control control,
+        Control? constrainTo,
+        LiveDragBoundaryMode mode
+    )
     {
         // 1. 同步 Ghost 位置
         if (state.Ghost != null && state.Adorner != null)
@@ -193,21 +226,25 @@ public static class MultiTouchDragExtensions
             {
                 Canvas.SetLeft(state.Ghost, ghostPos.Value.X);
                 Canvas.SetTop(state.Ghost, ghostPos.Value.Y);
-                
+
                 // 2. 同步 Ghost 裁剪
                 if (mode == LiveDragBoundaryMode.Clip && constrainTo != null)
                 {
-                    var cageInAdorner = constrainTo.TranslatePoint(new Point(0,0), state.Adorner);
+                    var cageInAdorner = constrainTo.TranslatePoint(new Point(0, 0), state.Adorner);
                     if (cageInAdorner.HasValue)
                     {
-                        state.Ghost.Clip = new RectangleGeometry(new Rect(
-                            cageInAdorner.Value.X - ghostPos.Value.X, 
-                            cageInAdorner.Value.Y - ghostPos.Value.Y, 
-                            constrainTo.Bounds.Width, 
-                            constrainTo.Bounds.Height));
+                        state.Ghost.Clip = new RectangleGeometry(
+                            new Rect(
+                                cageInAdorner.Value.X - ghostPos.Value.X,
+                                cageInAdorner.Value.Y - ghostPos.Value.Y,
+                                constrainTo.Bounds.Width,
+                                constrainTo.Bounds.Height
+                            )
+                        );
                     }
                 }
-                else state.Ghost.Clip = null;
+                else
+                    state.Ghost.Clip = null;
             }
         }
 
@@ -217,14 +254,18 @@ public static class MultiTouchDragExtensions
             var cageInControl = constrainTo.TranslatePoint(new Point(0, 0), control);
             if (cageInControl.HasValue)
             {
-                control.Clip = new RectangleGeometry(new Rect(
-                    cageInControl.Value.X, 
-                    cageInControl.Value.Y, 
-                    constrainTo.Bounds.Width, 
-                    constrainTo.Bounds.Height));
+                control.Clip = new RectangleGeometry(
+                    new Rect(
+                        cageInControl.Value.X,
+                        cageInControl.Value.Y,
+                        constrainTo.Bounds.Width,
+                        constrainTo.Bounds.Height
+                    )
+                );
             }
         }
-        else control.Clip = null;
+        else
+            control.Clip = null;
     }
 
     private static void EnsureTransform(Control c, LiveDragState s)

@@ -1,20 +1,21 @@
 using Avalonia;
 using Avalonia.Controls;
+using Svelonia.Core;
 using Svelonia.Data;
 
-using Svelonia.Core;
 namespace Svelonia.Fluent;
 
 /// <summary>
-/// 
+///
 /// </summary>
 public static class CommandExtensions
 {
     /// <summary>
-    /// Executes a Command (Request) when the button is clicked. 
+    /// Executes a Command (Request) when the button is clicked.
     /// Automatically disables the button while loading.
     /// </summary>
-    public static T OnCommand<T>(this T control, ICommand command) where T : Button
+    public static T OnCommand<T>(this T control, ICommand command)
+        where T : Button
     {
         return control.OnCommand(() => command);
     }
@@ -23,7 +24,8 @@ public static class CommandExtensions
     /// Executes a Command created by the factory when the button is clicked.
     /// Use this when the command parameters depend on current UI state (e.g. TextBoxes).
     /// </summary>
-    public static T OnCommand<T>(this T control, Func<ICommand> commandFactory) where T : Button
+    public static T OnCommand<T>(this T control, Func<ICommand> commandFactory)
+        where T : Button
     {
         // We need to resolve the Mediator lazily
         IMediator? mediator = null;
@@ -32,8 +34,10 @@ public static class CommandExtensions
         {
             if (mediator == null)
             {
-                if (Avalonia.Application.Current is ISveloniaApplication app &&
-                    app.Services is IServiceProvider sp)
+                if (
+                    Avalonia.Application.Current is ISveloniaApplication app
+                    && app.Services is IServiceProvider sp
+                )
                 {
                     mediator = sp.GetService(typeof(IMediator)) as IMediator;
                 }
@@ -68,7 +72,8 @@ public static class CommandExtensions
     /// Executes an Async Task when the button is clicked.
     /// Useful for binding to SveloniaForm.Submit or other async methods directly.
     /// </summary>
-    public static T OnCommand<T>(this T control, Func<System.Threading.Tasks.Task> action) where T : Button
+    public static T OnCommand<T>(this T control, Func<System.Threading.Tasks.Task> action)
+        where T : Button
     {
         control.Click += async (s, e) =>
         {

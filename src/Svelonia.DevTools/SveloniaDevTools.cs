@@ -6,18 +6,21 @@ using Avalonia.Input;
 namespace Svelonia.DevTools;
 
 /// <summary>
-/// 
+///
 /// </summary>
 public static class SveloniaDevTools
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     public static void Enable()
     {
         DevToolsContext.Instance.Enable();
 
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (
+            Application.Current?.ApplicationLifetime
+            is IClassicDesktopStyleApplicationLifetime desktop
+        )
         {
             if (desktop.MainWindow != null)
             {
