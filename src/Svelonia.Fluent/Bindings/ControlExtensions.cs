@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Svelonia.Core;
 
@@ -23,29 +24,40 @@ public static class ControlExtensions
     /// Binds the focus state of the control to a State of boolean.
     /// When the state becomes true, the control is focused.
     /// </summary>
-    public static T BindFocus<T>(this T control, State<bool> focusState)
-        where T : Control
+    public static T BindFocus<T>(this T control, State<bool> focusState) where T : Control
     {
         Action<bool> update = focused =>
         {
-            if (focused)
+            if (focused) 
             {
-                Avalonia.Threading.Dispatcher.UIThread.Post(
-                    () =>
-                    {
-                        if (control.IsVisible)
-                            control.Focus();
-                    },
-                    Avalonia.Threading.DispatcherPriority.Input
-                );
+                if (!control.IsLoaded)
+                {
+                    // If not loaded yet, wait for attachment
+                    EventHandler<RoutedEventArgs>? handler = null;
+                    handler = (s, e) => {
+                        control.Loaded -= handler;
+                        if ((bool)focusState.Value) 
+                        {
+                            Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                                if (control.IsVisible) control.Focus();
+                            }, Avalonia.Threading.DispatcherPriority.Input);
+                        }
+                    };
+                    control.Loaded += handler;
+                    return;
+                }
+
+                // If already loaded, focus immediately
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                    if (control.IsVisible) control.Focus();
+                }, Avalonia.Threading.DispatcherPriority.Input);
             }
         };
 
         focusState.OnChange += update;
         control.RegisterDisposable(new AnonymousDisposable(() => focusState.OnChange -= update));
 
-        if (focusState.Value)
-            update(true);
+        if (focusState.Value) update(true);
 
         return control;
     }

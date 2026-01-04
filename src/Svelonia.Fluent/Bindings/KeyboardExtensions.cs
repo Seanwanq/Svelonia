@@ -158,4 +158,88 @@ public static class KeyboardExtensions
             tunnel
         );
     }
+
+    /// <summary>
+    /// Configures multiple keyboard shortcuts for a control using a fluent builder.
+    /// Uses a single event handler for efficiency.
+    /// </summary>
+    /// <param name="control">The control.</param>
+    /// <param name="config">The builder configuration.</param>
+    /// <param name="when">Optional predicate to check if shortcuts should be processed.</param>
+    public static T WithShortcuts<T>(this T control, Action<ShortcutBuilder> config, Func<bool>? when = null) where T : Control
+    {
+        var builder = new ShortcutBuilder();
+        config(builder);
+
+        control.KeyDown += (s, e) =>
+        {
+            if (when != null && !when()) return;
+
+            foreach (var shortcut in builder.Shortcuts)
+            {
+                bool match = false;
+                if (shortcut.Gesture != null)
+                {
+                    match = shortcut.Gesture.Matches(e);
+                }
+                else if (shortcut.Key.HasValue)
+                {
+                    // Match specific key with no modifiers by default for simple Key bindings
+                    match = e.Key == shortcut.Key.Value && e.KeyModifiers == KeyModifiers.None;
+                }
+
+                if (match)
+                {
+                    shortcut.Action();
+                    e.Handled = true;
+                    break;
+                }
+            }
+        };
+
+        return control;
+    }
+}
+
+/// <summary>
+/// Builder for defining multiple keyboard shortcuts.
+/// </summary>
+public class ShortcutBuilder
+{
+    internal List<(KeyGesture? Gesture, Key? Key, Action Action)> Shortcuts { get; } = new();
+
+    /// <summary>
+    /// Adds a shortcut using a key gesture string (e.g. "Ctrl+S").
+    /// </summary>
+    public ShortcutBuilder Add(string gesture, Action action)
+    {
+        try
+        {
+            var g = KeyGesture.Parse(gesture);
+            Shortcuts.Add((g, null, action));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Svelonia] Failed to parse key gesture '{gesture}': {ex.Message}");
+        }
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a shortcut using a specific key.
+    /// </summary>
+    public ShortcutBuilder Add(Key key, Action action)
+    {
+        Shortcuts.Add((null, key, action));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a shortcut using a specific key and modifiers.
+    /// </summary>
+    public ShortcutBuilder Add(Key key, KeyModifiers modifiers, Action action)
+    {
+        Shortcuts.Add((new KeyGesture(key, modifiers), null, action));
+        return this;
+    }
 }

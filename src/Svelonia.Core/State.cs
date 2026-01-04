@@ -79,7 +79,7 @@ public class State<T> : IState
         NotifyObservers();
     }
 
-    public T Value
+    public virtual T Value
     {
         get
         {
