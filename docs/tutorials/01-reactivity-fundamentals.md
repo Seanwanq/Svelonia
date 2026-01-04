@@ -55,6 +55,12 @@ Avoid **Circular Dependencies**: If A depends on B, and B depends on A, Svelonia
 
 Svelonia uses a "Dirty Bit" to handle high-frequency synchronous updates. If you update a `State` 100 times in a single frame, a `Computed` value will only recalculate **once** (lazily) when it is next accessed or rendered.
 
+## 5. Structural Tracking with `StateList`
+
+Unlike standard collections, `StateList<T>` integrates with the reactivity system. When you use a `StateList` inside a `Computed` block (e.g., calling `.Count` or iterating), Svelonia tracks the **collection structure**.
+
+Any `Add`, `Remove`, or `Clear` operation on the list will automatically invalidate the dependent `Computed` values.
+
 ---
 
 ## Summary Checklist for Developers

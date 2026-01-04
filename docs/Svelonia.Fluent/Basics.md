@@ -66,6 +66,14 @@ new Button().SetContent(
 )
 ```
 
+### Dynamic Resources (`Sve.Res`)
+To use Avalonia DynamicResources fluently and safely (including in Native AOT environments):
+
+```csharp
+new Border().Bg(Sve.Res("ThemeAccentBrush"))
+```
+Svelonia's internal binding system automatically handles the conversion from resource extensions to live bindings, ensuring theme changes are reflected immediately.
+
 ## Advanced Setters
 
 ### Border Helpers

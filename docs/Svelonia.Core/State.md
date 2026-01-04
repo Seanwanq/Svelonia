@@ -11,6 +11,13 @@ var count = new State<int>(0);
 count.Value += 1; // Notifies all UI bindings and effects
 ```
 
+### Silent Updates
+If you need to update a state without triggering global debug notifications (useful for internal framework logic or preventing infinite loops in DevTools), use `SetSilent`.
+
+```csharp
+state.SetSilent(newValue); // Updates value and notifies observers, but skips StateDebug
+```
+
 ## Computed State
 
 `Computed<T>` derives a value from other states. It automatically tracks dependencies and recomputes only when necessary.
