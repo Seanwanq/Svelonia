@@ -7,6 +7,7 @@
 ### 1. 架构升级：Matrix-First 交互模型
 - **InfiniteCanvas 诞生**：摒弃了传统的 `ScrollViewer` 方案，改用纯 `RenderTransform` (Matrix) 驱动。实现了零闪烁、以鼠标中心缩放的丝滑体验。
 - **Svelonia.Controls 类库**：正式建立了独立的高级组件库，封装了 `InfiniteCanvas`。
+- **Svelonia.Physics 类库**：初步实现了弹簧动力学 (`SpringState`)，为 UI 增加了平滑的弹性物理反馈。
 
 ### 2. 性能巅峰：响应式裁剪、树扁平化与增量布局
 - **ReactiveViewport (核心工具)**：实现了标准化的视口裁剪逻辑。内置位移与缩放阈值拦截（Throttling），确保在高频交互下依然保持极致跟手。
@@ -14,10 +15,11 @@
 - **StateList 结构感知**：为 `StateList<T>` 引入了 `Version` 状态，使 `Computed` 能够自动感知集合结构的变化。
 - **增量布局 (Local Layout)**：验证了局部响应式传播在布局计算中的威力，将 O(N) 复杂度优化为局部 O(1)。
 
-### 3. API 进化与 DX 提升
-- **Polymorphic MapToChildren**：底层列表同步逻辑原生支持 `State<IEnumerable<T>>` 及其自动 Diff。
-- **布局快捷键**：补全了 `.BindPosition(x, y)`、`.SetBorder()` 和 `.OnPointerWheelChanged()` 等高频 Fluent API。
-- **交互细节打磨**：通过高灵敏度配置与斜向向量增强算法，对抗系统轴吸附，优化了触控板手感。
+### 3. 技术挑战与深度修复 (Troubleshooting)
+- **DevTools 递归死循环**：`StateList.Version` 的变更触发了 `StateDebug` 日志记录，而日志本身又在修改 `StateList`。通过引入 **`State.SetSilent()`** 绕过调试通知，成功切断了递归链。
+- **AOT 资源解析异常**：`DynamicResourceExtension` 在 Native AOT 下无法通过 `SetValue` 正常工作。修复方案是改用 **Control 索引器赋值**，确保资源链接在裁剪环境下依然有效。
+- **虚拟化缓存失效**：由于 Culling 逻辑中过度使用了 `Untrack` 和阈值过滤，导致新节点添加时被错误忽略。修复方案是引入 **数据实例引用校验**，实现精准的缓存失效。
+- **焦点同步“踏空”**：新节点创建后因 UI 未挂载导致 `Focus()` 失败。通过增强 **`BindFocus`** 监听 `IsLoaded/Attached` 事件，实现了物理焦点与状态同步的无缝排队。
 
 ---
 
@@ -35,12 +37,12 @@
 - [x] **多态 Each 支持**：扩展 `Sve.Each` 与 `MapToChildren` 兼容 `IEnumerable<T>`。
 - [x] **布局快捷键**：增加针对 Canvas 的 `.BindPosition(x, y)` 快捷方式。
 - [ ] **双向绑定优化**：重构 `BindTwoWay`，使其不再依赖反射 `Value` 属性。
-- [ ] **CommandShortcut API**：提供语义化的、声明式的键盘快捷键绑定。
+- [x] **CommandShortcut API**：提供语义化的、声明式的键盘快捷键绑定。
 
 ### 场景组件 (Svelonia.Controls)
 - [x] **InfiniteCanvas**：支持平移、缩放、触控优化的无限画布。
 - [x] **ReactiveViewport**：标准化的视口裁剪/虚拟化工具。
-- [ ] **SelectionManager**：通用的框选与空间点击流管理。
+- [x] **SelectionManager**：通用的框选与空间点击流管理。
 - [ ] **LinkEngine**：提供高性能的节点间连线渲染与路径计算。
 
 ### 开发者体验 (DX) 与 性能
