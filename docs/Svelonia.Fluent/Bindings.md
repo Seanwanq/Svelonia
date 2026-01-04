@@ -23,6 +23,21 @@ new TextBox().BindBufferedText(buffer, node.IsEditing);
 - **Enter**: Commits the buffer and sets `isEditing` to false.
 - **Escape**: Resets the buffer and sets `isEditing` to false.
 
+### Polymorphic MapToChildren
+The `MapToChildren` extension is the core of Svelonia list rendering. It supports two types of sources:
+
+1.  **StateList<T>**: High-performance incremental updates based on collection events.
+2.  **State<IEnumerable<T>>** (e.g. `Computed`): Automatically performs a Diff between the old and new list to synchronize the Visual Tree efficiently.
+
+```csharp
+// Using a filtered Computed list
+var searchResults = new Computed<IEnumerable<Item>>(() => 
+    allItems.Where(x => x.Name.Contains(query.Value))
+);
+
+new StackPanel().MapToChildren(searchResults, item => new ItemView(item));
+```
+
 ---
 
 ## Universal Event API

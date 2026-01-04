@@ -66,6 +66,24 @@ new Button().SetContent(
 )
 ```
 
+## Advanced Setters
+
+### Border Helpers
+Quickly set both brush and thickness. Works on `Border` and `Button` (TemplatedControl).
+
+```csharp
+new Button()
+    .SetBorder(Brushes.Red, thickness: 2.0);
+```
+
+### Canvas Positioning
+Bind both `Canvas.Left` and `Canvas.Top` in one call.
+
+```csharp
+new Border()
+    .BindPosition(node.X, node.Y); // node.X/Y are State<double>
+```
+
 ## Event Handling
 
 Common events have fluent wrappers.

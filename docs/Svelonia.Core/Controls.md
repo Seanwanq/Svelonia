@@ -27,6 +27,22 @@ Content = new StackPanel().SetChildren(
 );
 ```
 
+## Tree Flattening (`Sve.FlattenTree`)
+
+When building hierarchical UIs (like MindMaps or File Explorers) that need high-performance rendering, you can reactively flatten your tree structure.
+
+```csharp
+var flattened = Sve.FlattenTree(
+    root: _rootNode,
+    getChildren: node => node.Children,
+    isExpanded: node => node.IsExpanded.Value,
+    projectEdge: (parent, child) => new MyEdge(parent, child) // Optional
+);
+
+// 'flattened' is a Computed<IEnumerable<object>>
+// It automatically updates when sub-children are added or nodes are collapsed.
+```
+
 ## Asynchronous Data (`Sve.Await`)
 
 Handle `Task<T>` directly in your UI. `Sve.Await` manages the loading and error states for you.

@@ -52,6 +52,15 @@ list.Add("New Item"); // Triggers dependent effects and UI lists
 list.ReplaceAll(newItems); // Atomically updates the list with minimal UI churn
 ```
 
+### Structural Tracking
+`StateList<T>` includes a reactive `Version` property. When you iterate over a `StateList` or access its `Count` inside a `Computed` block, Svelonia automatically creates a dependency on the **collection's structure**.
+
+```csharp
+var items = new StateList<string>();
+var countLabel = new Computed<string>(() => $"Total items: {items.Count}"); 
+// Automatically recomputes when items are added or removed.
+```
+
 ## Fine-Tuning Reactivity
 
 ### Skipping Tracking (`Sve.Untrack`)
