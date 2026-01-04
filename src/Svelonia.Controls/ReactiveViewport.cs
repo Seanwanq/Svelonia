@@ -1,81 +1,100 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Avalonia;
 using Svelonia.Core;
 
 namespace Svelonia.Controls;
 
+/// <summary>
+/// Utility to handle high-performance reactive culling (virtualization) for InfiniteCanvas.
+/// </summary>
 public static class ReactiveViewport
 {
     /// <summary>
-    /// Creates a Computed IEnumerable that only contains items visible within the InfiniteCanvas viewport.
+    /// Creates a Computed IEnumerable that filters items based on their visibility in the InfiniteCanvas.
+    /// Includes built-in throttling to avoid UI churn during smooth movements.
     /// </summary>
-    /// <param name="viewport">The InfiniteCanvas to track.</param>
-    /// <param name="source">The reactive source of items.</param>
-    /// <param name="itemBoundsSelector">Function to get the bounding box of an item.</param>
-    /// <param name="buffer">Padding around the viewport in logical pixels. Default 1000.</param>
+    /// <typeparam name="T">The type of items.</typeparam>
+    /// <param name="canvas">The infinite canvas to track.</param>
+    /// <param name="source">The reactive source of all items.</param>
+    /// <param name="isVisible">Predicate to determine if an item is visible within the given world rectangle.</param>
+    /// <param name="moveThreshold">Minimum movement in pixels to trigger a re-filter. Default 50.</param>
+    /// <param name="scaleThreshold">Minimum scale change (0.0 to 1.0) to trigger a re-filter. Default 0.1 (10%).</param>
+    /// <param name="buffer">Padding added to the viewport rectangle in world coordinates. Default 1000.</param>
     public static Computed<IEnumerable<T>> CreateVisibleSet<T>(
-        InfiniteCanvas viewport,
+        InfiniteCanvas canvas,
         State<IEnumerable<T>> source,
-        Func<T, Rect> itemBoundsSelector,
-        double buffer = 1000
-    )
+        Func<Rect, T, bool> isVisible,
+        double moveThreshold = 50,
+        double scaleThreshold = 0.1,
+        double buffer = 1000)
     {
+        // Internal cache state
+        Matrix lastMat = Matrix.Identity;
+        IEnumerable<T>? lastSource = null;
+        List<T> lastResult = new();
+
         return new Computed<IEnumerable<T>>(() =>
         {
-            // 1. Track Dependencies
-            var mat = viewport.ViewMatrix.Value;
-            var size = viewport.ViewportSize.Value;
-            var items = source.Value; // Track source replacement
+            // 1. Register Dependencies
+            var mat = canvas.ViewMatrix.Value;
+            var size = canvas.ViewportSize.Value;
+            var items = source.Value;
 
-            // 2. Calculate World Rect
-            if (!mat.TryInvert(out var inv))
-                return items ?? Enumerable.Empty<T>();
+            // 2. Threshold & Invalidation Check
+            var dx = Math.Abs(mat.M31 - lastMat.M31);
+            var dy = Math.Abs(mat.M32 - lastMat.M32);
+            var ds = Math.Abs(mat.M11 - lastMat.M11);
+
+            bool needsUpdate = items != lastSource || 
+                               lastResult.Count == 0 ||
+                               dx > moveThreshold || 
+                               dy > moveThreshold || 
+                               ds > scaleThreshold;
+
+            if (!needsUpdate)
+            {
+                return lastResult;
+            }
+
+            // 3. Perform Filter
+            lastMat = mat;
+            lastSource = items;
+
+            if (!mat.TryInvert(out var inv)) return items ?? Enumerable.Empty<T>();
 
             var viewRect = new Rect(0, 0, size.Width, size.Height);
-            var worldRect = viewRect.TransformToAABB(inv);
-            worldRect = worldRect.Inflate(buffer);
+            var worldRect = viewRect.TransformToAABB(inv).Inflate(buffer);
 
-            // 3. Filter (Untracked)
             return Sve.Untrack(() =>
             {
-                if (items == null)
-                    return Enumerable.Empty<T>();
-                return items.Where(item => worldRect.Intersects(itemBoundsSelector(item)));
+                if (items == null) return Enumerable.Empty<T>();
+                
+                var result = items.Where(item => isVisible(worldRect, item)).ToList();
+                lastResult = result;
+                return result;
             });
         });
     }
 
     /// <summary>
-    /// Creates a Computed IEnumerable from a StateList/IEnumerable with manual version tracking.
-    /// Use this for StateList or non-reactive collections where you provide a version tick.
+    /// Convenience overload for AABB-based visibility.
     /// </summary>
     public static Computed<IEnumerable<T>> CreateVisibleSet<T>(
-        InfiniteCanvas viewport,
-        IEnumerable<T> source,
-        State<int> versionTrigger,
-        Func<T, Rect> itemBoundsSelector,
-        double buffer = 1000
-    )
+        InfiniteCanvas canvas,
+        State<IEnumerable<T>> source,
+        Func<T, Rect> boundsSelector,
+        double moveThreshold = 50,
+        double scaleThreshold = 0.1,
+        double buffer = 1000)
     {
-        return new Computed<IEnumerable<T>>(() =>
-        {
-            // 1. Track Dependencies
-            var mat = viewport.ViewMatrix.Value;
-            var size = viewport.ViewportSize.Value;
-            var _ = versionTrigger.Value; // Track version
-
-            // 2. Calculate World Rect
-            if (!mat.TryInvert(out var inv))
-                return source;
-
-            var viewRect = new Rect(0, 0, size.Width, size.Height);
-            var worldRect = viewRect.TransformToAABB(inv);
-            worldRect = worldRect.Inflate(buffer);
-
-            // 3. Filter (Untracked)
-            return Sve.Untrack(() =>
-            {
-                return source.Where(item => worldRect.Intersects(itemBoundsSelector(item)));
-            });
-        });
+        return CreateVisibleSet(
+            canvas, 
+            source, 
+            (worldRect, item) => worldRect.Intersects(boundsSelector(item)),
+            moveThreshold, 
+            scaleThreshold, 
+            buffer);
     }
 }
