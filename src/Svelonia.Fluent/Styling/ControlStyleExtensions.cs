@@ -95,9 +95,23 @@ public static class ControlStyleExtensions
         {
             control.Bind(property, state.ToBinding());
         }
+        else if (value is IState ista)
+        {
+            // Handle State<UnknownType> by using the generic object binding
+            control.Bind(property, ista.ToBinding());
+        }
+        else if (value is Avalonia.Data.IBinding binding)
+        {
+            // Direct support for any Avalonia binding
+            control.Bind(property, binding);
+        }
         else if (value is Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension dr)
         {
-            control[property] = dr;
+            // Correct way to apply a DynamicResource programmatically in Avalonia 11
+            if (dr.ProvideValue(null!) is Avalonia.Data.IBinding b)
+            {
+                control.Bind(property, b);
+            }
         }
         else
         {

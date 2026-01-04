@@ -75,7 +75,7 @@ public class StateList<T> : ObservableCollection<T>, IDependency, IEnumerable<T>
 
     private void NotifyObservers()
     {
-        Version.Value++; // Increment version on every notification
+        Version.SetSilent(Version.Value + 1); // Silent update to prevent recursion in DevTools
         
         if (_observers.Count == 0) return;
         var targets = _observers.ToList();

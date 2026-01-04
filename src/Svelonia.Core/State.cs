@@ -67,6 +67,18 @@ public class State<T> : IState
         StateDebug.NotifyChange(this, _value);
     }
 
+    /// <summary>
+    /// Updates the value and notifies observers silently (skips StateDebug).
+    /// Used for internal framework states to prevent recursion.
+    /// </summary>
+    public void SetSilent(T newValue)
+    {
+        _value = newValue;
+        _subject.OnNext(_value);
+        OnPropertyChanged(nameof(Value));
+        NotifyObservers();
+    }
+
     public T Value
     {
         get
