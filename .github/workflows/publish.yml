@@ -54,6 +54,7 @@ jobs:
           dotnet pack src/Svelonia.Core/Svelonia.Core.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
           dotnet pack src/Svelonia.Data/Svelonia.Data.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
           dotnet pack src/Svelonia.Fluent/Svelonia.Fluent.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
+          dotnet pack src/Svelonia.Controls/Svelonia.Controls.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
           dotnet pack src/Svelonia.Kit/Svelonia.Kit.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
           dotnet pack src/Svelonia.Gen/Svelonia.Gen.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
           dotnet pack src/Svelonia.DevTools/Svelonia.DevTools.csproj -c Release -o artifacts -p:Version=${{ env.RELEASE_VERSION }}
