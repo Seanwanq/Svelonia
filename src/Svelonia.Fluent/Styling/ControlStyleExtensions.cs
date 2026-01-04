@@ -95,6 +95,10 @@ public static class ControlStyleExtensions
         {
             control.Bind(property, state.ToBinding());
         }
+        else if (value is Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension dr)
+        {
+            control[property] = dr;
+        }
         else
         {
             control.SetValue(property, SveConverter.Convert(property, value));

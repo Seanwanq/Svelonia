@@ -56,6 +56,7 @@ try {
     $content = $content -replace '<PackageReference Include="Svelonia.Core".*?/>', '<ProjectReference Include="../src/Svelonia.Core/Svelonia.Core.csproj" />'
     $content = $content -replace '<PackageReference Include="Svelonia.Data".*?/>', '<ProjectReference Include="../src/Svelonia.Data/Svelonia.Data.csproj" />'
     $content = $content -replace '<PackageReference Include="Svelonia.Fluent".*?/>', '<ProjectReference Include="../src/Svelonia.Fluent/Svelonia.Fluent.csproj" />'
+    $content = $content -replace '<PackageReference Include="Svelonia.Controls".*?/>', '<ProjectReference Include="../src/Svelonia.Controls/Svelonia.Controls.csproj" />'
     $content = $content -replace '<PackageReference Include="Svelonia.Kit".*?/>', '<ProjectReference Include="../src/Svelonia.Kit/Svelonia.Kit.csproj" />'
     # Use regex single-line mode (?s) to handle multi-line PackageReference
     $content = $content -replace '(?s)<PackageReference Include="Svelonia.DevTools".*?/>', '<ProjectReference Include="../src/Svelonia.DevTools/Svelonia.DevTools.csproj" />'
