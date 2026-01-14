@@ -2,6 +2,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Threading;
+using System.Diagnostics;
 using Svelonia.Core;
 using Svelonia.Fluent;
 
@@ -15,6 +17,11 @@ public class InfiniteCanvas : ContentControl
     private bool _isPanning;
     private Point _lastMousePos;
     
+    // Animation
+    private readonly DispatcherTimer _animationTimer;
+    private Matrix _targetMatrix;
+    private bool _isAnimating;
+
     public State<Matrix> ViewMatrix { get; } = new(Matrix.Identity);
     public State<Size> ViewportSize { get; } = new(new Size(0, 0));
 
@@ -30,12 +37,75 @@ public class InfiniteCanvas : ContentControl
         HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch;
         VerticalContentAlignment = Avalonia.Layout.VerticalAlignment.Stretch;
 
+        _animationTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(16), DispatcherPriority.Input, OnAnimationTick);
+        _animationTimer.Stop();
+
         this.GetObservable(BoundsProperty).Subscribe(rect => ViewportSize.Value = rect.Size);
 
         this.OnPointerWheelChanged(OnWheel);
         this.OnPointerPressed(OnPressed);
         this.OnPointerMoved(OnMoved);
         this.OnPointerReleased(OnReleased);
+    }
+
+    private void CancelAnimation()
+    {
+        if (_isAnimating)
+        {
+            _isAnimating = false;
+            _animationTimer.Stop();
+        }
+    }
+
+    private void OnAnimationTick(object? sender, EventArgs e)
+    {
+        if (!_isAnimating)
+        {
+            _animationTimer.Stop();
+            return;
+        }
+
+        var current = ViewMatrix.Value;
+        var target = _targetMatrix;
+
+        // Simple Lerp for Translation (assuming Scale is constant during this anim)
+        // Lerp factor 0.2 for smooth spring-like ease-out
+        double lerp = 0.2;
+
+        double nextM31 = current.M31 + (target.M31 - current.M31) * lerp;
+        double nextM32 = current.M32 + (target.M32 - current.M32) * lerp;
+
+        // Check if close enough
+        if (Math.Abs(target.M31 - nextM31) < 0.5 && Math.Abs(target.M32 - nextM32) < 0.5)
+        {
+            ViewMatrix.Value = target;
+            _isAnimating = false;
+            _animationTimer.Stop();
+        }
+        else
+        {
+            // Reconstruct matrix with new translation (preserving scale/rotation from current)
+            // Note: This assumes only translation changes. If scale changes, we need to lerp M11/M22 too.
+            // For EnsureVisible, it's only translation.
+            
+            // Safer: Matrix copy
+            var next = new Matrix(
+                current.M11, current.M12,
+                current.M21, current.M22,
+                nextM31, nextM32);
+            
+            ViewMatrix.Value = next;
+        }
+    }
+
+    private void AnimateTo(Matrix target)
+    {
+        _targetMatrix = target;
+        if (!_isAnimating)
+        {
+            _isAnimating = true;
+            _animationTimer.Start();
+        }
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -71,14 +141,23 @@ public class InfiniteCanvas : ContentControl
     /// </summary>
     public void EnsureVisible(Rect worldRect, double padding = 100, bool instant = false)
     {
+        if (_isPanning) return;
+
         var mat = ViewMatrix.Value;
         var size = ViewportSize.Value;
         if (size.Width <= 0 || size.Height <= 0) return;
 
-        var viewRect = worldRect.TransformToAABB(mat);
-        var viewport = new Rect(padding, padding, size.Width - padding * 2, size.Height - padding * 2);
+        // Adaptive padding: don't let padding consume the entire screen
+        double safePaddingX = Math.Min(padding, size.Width * 0.25);
+        double safePaddingY = Math.Min(padding, size.Height * 0.25);
 
-        if (viewport.Contains(viewRect)) return;
+        var viewRect = worldRect.TransformToAABB(mat);
+        var viewport = new Rect(safePaddingX, safePaddingY, size.Width - safePaddingX * 2, size.Height - safePaddingY * 2);
+
+        if (viewport.Contains(viewRect)) 
+        {
+            return;
+        }
 
         double dx = 0;
         double dy = 0;
@@ -91,21 +170,22 @@ public class InfiniteCanvas : ContentControl
 
         if (dx == 0 && dy == 0) return;
 
-        // DEBUG LOG
-        // Console.WriteLine($"[InfiniteCanvas] EnsureVisible: dx={dx:F1}, dy={dy:F1} | Instant={instant}");
+        var targetMatrix = mat * Matrix.CreateTranslation(dx, dy);
 
         if (instant)
         {
-            ViewMatrix.Value = mat * Matrix.CreateTranslation(dx, dy);
+            CancelAnimation();
+            ViewMatrix.Value = targetMatrix;
         }
         else
         {
-            ViewMatrix.Value = mat * Matrix.CreateTranslation(dx * 0.3, dy * 0.3);
+            AnimateTo(targetMatrix);
         }
     }
 
     private void OnWheel(object? sender, PointerWheelEventArgs e)
     {
+        CancelAnimation();
         if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
         {
             e.Handled = true;
@@ -135,6 +215,7 @@ public class InfiniteCanvas : ContentControl
 
     private void OnPressed(object? sender, PointerPressedEventArgs e)
     {
+        CancelAnimation();
         var props = e.GetCurrentPoint(this).Properties;
         if (props.IsRightButtonPressed || props.IsMiddleButtonPressed || e.Pointer.Type == PointerType.Touch)
         {

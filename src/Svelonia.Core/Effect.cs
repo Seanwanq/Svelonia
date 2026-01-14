@@ -10,17 +10,33 @@ public class Effect : IObserver, IDisposable
     private bool _isDisposed;
     private bool _isRunning;
     private bool _needsReRun;
+    private bool _isPaused;
     private readonly string _id = Guid.NewGuid().ToString()[..4];
 
-    public Effect(Action action)
+    public Effect(Action action, bool paused = false)
     {
         _action = action;
-        Run();
+        _isPaused = paused;
+        
+        if (!paused)
+        {
+            Run();
+        }
+    }
+
+    public void Resume()
+    {
+        if (_isDisposed) return;
+        if (_isPaused)
+        {
+            _isPaused = false;
+            Run();
+        }
     }
 
     public void OnStateChanged()
     {
-        if (_isDisposed) return;
+        if (_isDisposed || _isPaused) return;
         
         if (_isRunning)
         {
@@ -43,7 +59,7 @@ public class Effect : IObserver, IDisposable
 
     private void Run()
     {
-        if (_isDisposed) return;
+        if (_isDisposed || _isPaused) return;
         
         _isRunning = true;
         _needsReRun = false;
@@ -51,6 +67,7 @@ public class Effect : IObserver, IDisposable
         try {
             // Unsubscribe to re-track
             foreach (var d in _dependencies) d.Unsubscribe(this);
+            int oldDepCount = _dependencies.Count;
             _dependencies.Clear();
 
             ObserverContext.Push(this);
@@ -69,7 +86,6 @@ public class Effect : IObserver, IDisposable
             _isRunning = false;
             if (_needsReRun)
             {
-                // LogDebug($"Effect[{_id}] re-running due to dirty bit");
                 Run();
             }
         }

@@ -37,100 +37,111 @@ public class SelectionManager<T> where T : class
         _setSelected = setSelected;
     }
 
-    /// <summary>
-    /// Clears the entire selection.
-    /// </summary>
-    public void Clear()
-    {
-        foreach (var item in SelectedItems.ToList())
+        /// <summary>
+        /// Clears the entire selection.
+        /// </summary>
+        public void Clear()
         {
-            _setSelected(item, false);
-        }
-        SelectedItems.Clear();
-    }
-
-    /// <summary>
-    /// Handles a single item click with modifier support.
-    /// </summary>
-    public void HandleClick(T? item, bool isCtrlPressed = false, bool isShiftPressed = false)
-    {
-        if (item == null)
-        {
-            if (!isCtrlPressed) Clear();
-            return;
-        }
-
-        bool isAlreadySelected = SelectedItems.Contains(item);
-
-        if (isCtrlPressed)
-        {
-            // Toggle mode
-            if (isAlreadySelected)
+            Sve.Batch(() =>
             {
-                SelectedItems.Remove(item);
-                _setSelected(item, false);
-            }
-            else
-            {
-                SelectedItems.Add(item);
-                _setSelected(item, true);
-            }
-        }
-        else
-        {
-            // Normal single select
-            Clear();
-            SelectedItems.Add(item);
-            _setSelected(item, true);
-        }
-    }
-
-    /// <summary>
-    /// Updates selection based on a bounding rectangle (Marquee Selection).
-    /// </summary>
-    /// <param name="selectionRect">The selection rectangle in world coordinates.</param>
-    /// <param name="isIncremental">If true, items outside the rect are not deselected.</param>
-    public void UpdateBoxSelection(Rect selectionRect, bool isIncremental = false)
-    {
-        var allItems = _sourceSelector();
-        
-        foreach (var item in allItems)
-        {
-            var itemBounds = _boundsSelector(item);
-            bool isInside = selectionRect.Intersects(itemBounds);
-            bool isCurrent = SelectedItems.Contains(item);
-
-            if (isInside)
-            {
-                if (!isCurrent)
+                foreach (var item in SelectedItems.ToList())
                 {
+                    _setSelected(item, false);
+                }
+                SelectedItems.Clear();
+            });
+        }
+    
+        /// <summary>
+        /// Handles a single item click with modifier support.
+        /// </summary>
+        public void HandleClick(T? item, bool isCtrlPressed = false, bool isShiftPressed = false)
+        {
+            Sve.Batch(() =>
+            {
+                if (item == null)
+                {
+                    if (!isCtrlPressed) Clear();
+                    return;
+                }
+    
+                bool isAlreadySelected = SelectedItems.Contains(item);
+    
+                if (isCtrlPressed)
+                {
+                    // Toggle mode
+                    if (isAlreadySelected)
+                    {
+                        SelectedItems.Remove(item);
+                        _setSelected(item, false);
+                    }
+                    else
+                    {
+                        SelectedItems.Add(item);
+                        _setSelected(item, true);
+                    }
+                }
+                else
+                {
+                    // Normal single select
+                    Clear();
                     SelectedItems.Add(item);
                     _setSelected(item, true);
                 }
-            }
-            else if (!isIncremental)
-            {
-                if (isCurrent)
-                {
-                    SelectedItems.Remove(item);
-                    _setSelected(item, false);
-                }
-            }
+            });
         }
-    }
-
-    /// <summary>
-    /// Selects all items in the source.
-    /// </summary>
-    public void SelectAll()
-    {
-        foreach (var item in _sourceSelector())
+    
+        /// <summary>
+        /// Updates selection based on a bounding rectangle (Marquee Selection).
+        /// </summary>
+        /// <param name="selectionRect">The selection rectangle in world coordinates.</param>
+        /// <param name="isIncremental">If true, items outside the rect are not deselected.</param>
+        public void UpdateBoxSelection(Rect selectionRect, bool isIncremental = false)
         {
-            if (!SelectedItems.Contains(item))
+            Sve.Batch(() =>
             {
-                SelectedItems.Add(item);
-                _setSelected(item, true);
-            }
+                var allItems = _sourceSelector();
+    
+                foreach (var item in allItems)
+                {
+                    var itemBounds = _boundsSelector(item);
+                    bool isInside = selectionRect.Intersects(itemBounds);
+                    bool isCurrent = SelectedItems.Contains(item);
+    
+                    if (isInside)
+                    {
+                        if (!isCurrent)
+                        {
+                            SelectedItems.Add(item);
+                            _setSelected(item, true);
+                        }
+                    }
+                    else if (!isIncremental)
+                    {
+                        if (isCurrent)
+                        {
+                            SelectedItems.Remove(item);
+                            _setSelected(item, false);
+                        }
+                    }
+                }
+            });
         }
-    }
-}
+    
+        /// <summary>
+        /// Selects all items in the source.
+        /// </summary>
+        public void SelectAll()
+        {
+            Sve.Batch(() =>
+            {
+                foreach (var item in _sourceSelector())
+                {
+                    if (!SelectedItems.Contains(item))
+                    {
+                        SelectedItems.Add(item);
+                        _setSelected(item, true);
+                    }
+                }
+            });
+        }}

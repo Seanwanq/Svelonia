@@ -46,6 +46,22 @@ count.Value++; // Triggers the effect
 cleanup.Dispose(); // Stops the effect and unsubscribes from all dependencies
 ```
 
+### Paused Effects (Manual Activation)
+By default, an `Effect` runs immediately upon creation. However, in scenarios like **bulk initialization** or **object pooling**, you might want to create an effect but delay its execution.
+
+```csharp
+// Create an effect but don't run it yet
+var effect = Sve.Effect(() => {
+    Console.WriteLine("Layout calculation...");
+}, paused: true);
+
+// ... perform bulk operations ...
+
+// Manually activate the effect
+// This runs the action for the first time and registers dependencies
+effect.Resume();
+```
+
 ### Dynamic Dependencies
 Effects automatically track which states are read during execution. If your logic contains branches, Svelonia will only track the dependencies that were actually hit during the last run.
 

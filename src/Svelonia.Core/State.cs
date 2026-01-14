@@ -22,14 +22,13 @@ public class State<T> : IState
 
     private T _value;
     private readonly HashSet<IObserver> _observers = new();
-    private readonly BehaviorSubject<object?> _subject;
+    private BehaviorSubject<object?>? _subject;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public State(T initialValue)
     {
         _value = initialValue;
-        _subject = new BehaviorSubject<object?>(initialValue);
     }
 
     public event Action<T>? OnChange;
@@ -59,7 +58,7 @@ public class State<T> : IState
         _value = newValue;
         OnChange?.Invoke(_value);
         OnChangeObject?.Invoke(_value);
-        _subject.OnNext(_value);
+        _subject?.OnNext(_value);
         
         OnPropertyChanged(nameof(Value));
         NotifyObservers();
@@ -74,7 +73,7 @@ public class State<T> : IState
     public void SetSilent(T newValue)
     {
         _value = newValue;
-        _subject.OnNext(_value);
+        _subject?.OnNext(_value);
         OnPropertyChanged(nameof(Value));
         NotifyObservers();
     }
@@ -104,13 +103,23 @@ public class State<T> : IState
     public void Notify()
     {
         OnPropertyChanged(nameof(Value));
-        _subject.OnNext(_value);
+        _subject?.OnNext(_value);
         NotifyObservers();
     }
 
     protected void NotifyObservers()
     {
         if (_observers.Count == 0) return;
+
+        if (ObserverContext.IsBatching)
+        {
+            foreach (var observer in _observers)
+            {
+                ObserverContext.RegisterDirty(observer);
+            }
+            return;
+        }
+
         var targets = _observers.ToList();
         foreach (var observer in targets)
         {
@@ -120,5 +129,9 @@ public class State<T> : IState
 
     private void LogDebug(string msg) => Console.WriteLine($"[DEBUG] [State] {msg}");
 
-    public IDisposable Subscribe(System.IObserver<object?> observer) => _subject.Subscribe(observer);
+    public IDisposable Subscribe(System.IObserver<object?> observer)
+    {
+        _subject ??= new BehaviorSubject<object?>(_value);
+        return _subject.Subscribe(observer);
+    }
 }

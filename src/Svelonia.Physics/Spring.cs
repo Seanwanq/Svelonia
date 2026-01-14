@@ -38,6 +38,10 @@ public class Spring
     /// </summary>
     public double Target { get; set; }
 
+    private double _accumulator;
+    private const double SOLVER_TIMESTEP = 0.001; // 1ms physics step
+    private const double MAX_DT = 0.064; // Max 64ms per frame to prevent spiral of death
+
     public Spring(double initialValue)
     {
         Value = initialValue;
@@ -45,11 +49,37 @@ public class Spring
     }
 
     /// <summary>
-    /// Updates the spring state by one time step.
+    /// Updates the spring state by one time step using robust sub-stepping.
     /// </summary>
     /// <param name="deltaTime">Time since last update in seconds.</param>
     /// <returns>True if the spring is still moving.</returns>
     public bool Step(double deltaTime)
+    {
+        // Cap large time steps to prevent instability
+        if (deltaTime > MAX_DT) deltaTime = MAX_DT;
+
+        _accumulator += deltaTime;
+
+        // Consume time in fixed small steps
+        while (_accumulator >= SOLVER_TIMESTEP)
+        {
+            Integrate(SOLVER_TIMESTEP);
+            _accumulator -= SOLVER_TIMESTEP;
+        }
+
+        // Check for rest state (arbitrary small thresholds)
+        bool isResting = Math.Abs(Velocity) < 0.005 && Math.Abs(Value - Target) < 0.005;
+        if (isResting)
+        {
+            Value = Target;
+            Velocity = 0;
+            _accumulator = 0;
+        }
+
+        return !isResting;
+    }
+
+    private void Integrate(double dt)
     {
         // F = -k * x - c * v
         double displacement = Value - Target;
@@ -60,18 +90,11 @@ public class Spring
         // a = F / m
         double acceleration = totalForce / Mass;
 
-        // Numerical integration (Euler)
-        Velocity += acceleration * deltaTime;
-        Value += Velocity * deltaTime;
-
-        // Check for rest state (arbitrary small thresholds)
-        bool isResting = Math.Abs(Velocity) < 0.001 && Math.Abs(Value - Target) < 0.001;
-        if (isResting)
-        {
-            Value = Target;
-            Velocity = 0;
-        }
-
-        return !isResting;
+        // Semi-Implicit Euler (More stable than standard Euler)
+        // 1. Update Velocity first
+        Velocity += acceleration * dt;
+        
+        // 2. Update Position using the NEW Velocity
+        Value += Velocity * dt;
     }
 }

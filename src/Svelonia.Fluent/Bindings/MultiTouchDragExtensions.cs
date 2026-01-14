@@ -41,7 +41,7 @@ public static class MultiTouchDragExtensions
         Func<Point, Point>? constrain = null,
         Control? constrainTo = null,
         LiveDragBoundaryMode boundaryMode = LiveDragBoundaryMode.Clamp,
-        Action? onStart = null,
+        Action<PointerPressedEventArgs>? onStart = null,
         Action? onEnd = null,
         Action<Point>? onMove = null
     )
@@ -83,7 +83,7 @@ public static class MultiTouchDragExtensions
                 }
 
                 UpdateVisuals(state, control, constrainTo, boundaryMode);
-                onStart?.Invoke();
+                onStart?.Invoke(e);
 
                 e.Pointer.Capture(trigger);
                 e.Handled = true;

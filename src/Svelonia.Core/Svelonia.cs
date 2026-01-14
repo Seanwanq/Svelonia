@@ -99,13 +99,14 @@ public static partial class Sve
     }
 
     /// <summary>
-    /// Creates a reactive effect that runs immediately and re-runs whenever its dependencies change.
+    /// Creates a reactive effect.
     /// </summary>
     /// <param name="action">The action to execute.</param>
-    /// <returns>A disposable that stops the effect.</returns>
-    public static IDisposable Effect(Action action)
+    /// <param name="paused">If true, the effect will not run immediately. Use <see cref="Effect.Resume"/> to start it.</param>
+    /// <returns>The effect instance.</returns>
+    public static Effect Effect(Action action, bool paused = false)
     {
-        return new Effect(action);
+        return new Effect(action, paused);
     }
 
     /// <summary>
@@ -125,7 +126,7 @@ public static partial class Sve
     }
 
     /// <summary>
-    /// Runs the specified function without registering any reactive dependencies.
+    /// Runs the specified action without registering any reactive dependencies.
     /// </summary>
     public static T Untrack<T>(Func<T> func)
     {
@@ -137,6 +138,22 @@ public static partial class Sve
         finally
         {
             ObserverContext.PopUntrack();
+        }
+    }
+
+    /// <summary>
+    /// Batches multiple state updates together, notifying observers only once at the end.
+    /// </summary>
+    public static void Batch(Action action)
+    {
+        ObserverContext.PushBatch();
+        try
+        {
+            action();
+        }
+        finally
+        {
+            ObserverContext.PopBatch();
         }
     }
 

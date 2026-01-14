@@ -11,9 +11,6 @@ namespace Svelonia.Physics;
 public class SpringState : State<double>, IDisposable
 {
     private readonly Spring _simulator;
-    private bool _isRunning;
-    private readonly Stopwatch _stopwatch = new();
-    private double _lastElapsed;
 
     /// <summary>
     /// Tension of the spring. Default 170.
@@ -30,8 +27,14 @@ public class SpringState : State<double>, IDisposable
     /// </summary>
     public double Mass { get => _simulator.Mass; set => _simulator.Mass = value; }
 
+    /// <summary>
+    /// The target value the spring is moving towards.
+    /// </summary>
+    public State<double> TargetState { get; }
+
     public SpringState(double initialValue) : base(initialValue)
     {
+        TargetState = new State<double>(initialValue);
         _simulator = new Spring(initialValue);
     }
 
@@ -42,6 +45,7 @@ public class SpringState : State<double>, IDisposable
         {
             if (Math.Abs(_simulator.Target - value) < 0.0001) return;
             _simulator.Target = value;
+            TargetState.Value = value;
             Start();
         }
     }
@@ -52,48 +56,38 @@ public class SpringState : State<double>, IDisposable
     public void SetImmediate(double value)
     {
         _simulator.Target = value;
+        TargetState.Value = value;
         _simulator.Value = value;
         _simulator.Velocity = 0;
-        _isRunning = false;
         base.Value = value;
     }
 
     private void Start()
     {
-        if (_isRunning) return;
-        _isRunning = true;
-        _stopwatch.Restart();
-        _lastElapsed = 0;
-        Dispatcher.UIThread.Post(Tick, DispatcherPriority.Render);
+        AnimationLoop.Register(this);
     }
 
-    private void Tick()
+    /// <summary>
+    /// Performs a single step of simulation. Called by AnimationLoop.
+    /// </summary>
+    /// <returns>True if still moving.</returns>
+    internal bool InternalStep(double dt)
     {
-        if (!_isRunning) return;
-
-        double currentElapsed = _stopwatch.Elapsed.TotalSeconds;
-        double dt = currentElapsed - _lastElapsed;
-        _lastElapsed = currentElapsed;
-
-        // Cap dt to avoid huge jumps on lag
-        if (dt > 0.1) dt = 0.1;
-
         if (_simulator.Step(dt))
         {
+            if (!double.IsFinite(_simulator.Value)) return false;
             base.ForceUpdate(_simulator.Value);
-            Dispatcher.UIThread.Post(Tick, DispatcherPriority.Render);
+            return true;
         }
         else
         {
-            base.ForceUpdate(_simulator.Value);
-            _isRunning = false;
-            _stopwatch.Stop();
+            if (double.IsFinite(_simulator.Value))
+                base.ForceUpdate(_simulator.Value);
+            return false;
         }
     }
 
     public void Dispose()
     {
-        _isRunning = false;
-        _stopwatch.Stop();
     }
 }

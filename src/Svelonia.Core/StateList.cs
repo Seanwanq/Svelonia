@@ -5,7 +5,15 @@ using Avalonia.Threading;
 
 namespace Svelonia.Core;
 
-public class StateList<T> : ObservableCollection<T>, IDependency, IEnumerable<T>, System.Collections.IEnumerable
+public class StateList<T> : ObservableCollection<T>, 
+    IDependency, 
+    IEnumerable<T>, 
+    IList<T>, 
+    IReadOnlyList<T>,
+    ICollection<T>,
+    IReadOnlyCollection<T>,
+    System.Collections.IList,
+    System.Collections.IEnumerable
 {
     private readonly HashSet<IObserver> _observers = new();
 
@@ -20,7 +28,12 @@ public class StateList<T> : ObservableCollection<T>, IDependency, IEnumerable<T>
 
     public StateList<T> Track()
     {
-        ObserverContext.Current?.RegisterDependency(this);
+        var current = ObserverContext.Current;
+        if (current != null)
+        {
+            // Console.WriteLine($"[REAC-DEBUG] StateList tracked by {current.GetType().Name}");
+            current.RegisterDependency(this);
+        }
         return this;
     }
 
@@ -45,7 +58,32 @@ public class StateList<T> : ObservableCollection<T>, IDependency, IEnumerable<T>
         set => base[index] = value;
     }
 
+    #region Explicit Interface Implementation for Robust Tracking
+
+    T IList<T>.this[int index] 
+    { 
+        get { Track(); return base[index]; }
+        set { base[index] = value; }
+    }
+
+    T IReadOnlyList<T>.this[int index] 
+    { 
+        get { Track(); return base[index]; }
+    }
+
+    int ICollection<T>.Count { get { Track(); return base.Count; } }
+    int IReadOnlyCollection<T>.Count { get { Track(); return base.Count; } }
+
+    #endregion
+
     public new IEnumerator<T> GetEnumerator()
+    {
+        Track();
+        var _ = Version.Value;
+        return base.GetEnumerator();
+    }
+
+    IEnumerator<T> IEnumerable<T>.GetEnumerator()
     {
         Track();
         var _ = Version.Value;
@@ -78,6 +116,16 @@ public class StateList<T> : ObservableCollection<T>, IDependency, IEnumerable<T>
         Version.SetSilent(Version.Value + 1); // Silent update to prevent recursion in DevTools
         
         if (_observers.Count == 0) return;
+
+        if (ObserverContext.IsBatching)
+        {
+            foreach (var observer in _observers)
+            {
+                ObserverContext.RegisterDirty(observer);
+            }
+            return;
+        }
+
         var targets = _observers.ToList();
         foreach (var observer in targets)
         {
