@@ -38,6 +38,26 @@ var searchResults = new Computed<IEnumerable<Item>>(() =>
 new StackPanel().MapToChildren(searchResults, item => new ItemView(item));
 ```
 
+### Universal Property Binding
+Svelonia uses a high-performance Source Generator (`Svelonia.Gen`) to automatically create fluent extensions for every Avalonia property.
+
+1.  **Generated Extensions**: Use the standard `BindXXX` or `SetXXX` names.
+    ```csharp
+    new Border().BindWidth(node.Width); // Generated automatically
+    ```
+
+2.  **Manual/Framework Extensions**: To avoid naming collisions with generated code, Svelonia's manual library extensions use the `Sve` prefix.
+    ```csharp
+    new Border().SveBindIsVisible(node.IsVisible); // Manual framework version
+    ```
+
+> **Rule of Thumb**: Always try the standard `BindXXX` first. If you encounter an "Ambiguous call" or "Definition not found" error, use the `SveBindXXX` equivalent.
+
+For any property not covered by either, use the generic `BindState`:
+```csharp
+control.SveBindState(Layoutable.MarginProperty, someState);
+```
+
 ---
 
 ## Universal Event API

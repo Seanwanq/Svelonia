@@ -5,6 +5,57 @@ using Avalonia.Threading;
 
 namespace Svelonia.Core;
 
+public interface IHierarchyNode
+{
+    IState ParentState { get; }
+}
+
+/// <summary>
+/// A specialized StateList that automatically maintains parent-child relationships for items implementing IHierarchyNode.
+/// </summary>
+public class HierarchyStateList<T>(object owner) : StateList<T>
+{
+    private readonly object _owner = owner;
+
+    protected override void InsertItem(int index, T item)
+    {
+        if (item is IHierarchyNode node)
+        {
+            if (node.ParentState is State<object?> objParent) objParent.Value = _owner;
+            else if (node.ParentState is State<T> tParent) tParent.Value = (T)_owner;
+            else if (node.ParentState is IState anyParent) 
+            {
+                 // Try generic fallbacks or reflection if needed, but preferred typed approach above
+            }
+        }
+        base.InsertItem(index, item);
+    }
+
+    protected override void RemoveItem(int index)
+    {
+        var item = this[index];
+        if (item is IHierarchyNode node)
+        {
+             if (node.ParentState is State<object?> objParent) objParent.Value = null;
+             else if (node.ParentState is State<T> tParent) tParent.Value = default;
+        }
+        base.RemoveItem(index);
+    }
+
+    protected override void ClearItems()
+    {
+        foreach (var item in Items)
+        {
+            if (item is IHierarchyNode node)
+            {
+                 if (node.ParentState is State<object?> objParent) objParent.Value = null;
+                 else if (node.ParentState is State<T> tParent) tParent.Value = default;
+            }
+        }
+        base.ClearItems();
+    }
+}
+
 public class StateList<T> : ObservableCollection<T>, 
     IDependency, 
     IEnumerable<T>, 

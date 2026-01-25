@@ -84,6 +84,28 @@ var countLabel = new Computed<string>(() => $"Total items: {items.Count}");
 // Automatically recomputes when items are added or removed.
 ```
 
+### Hierarchy Management (`HierarchyStateList<T>`)
+
+When building tree structures (like mind maps or org charts), maintaining parent-child relationships manually is error-prone. Svelonia provides a specialized collection to handle this.
+
+1.  **Implement `IHierarchyNode`**:
+    ```csharp
+    public class MyNode : IHierarchyNode {
+        public State<MyNode?> Parent { get; } = new(null);
+        IState IHierarchyNode.ParentState => Parent;
+    }
+    ```
+
+2.  **Use `HierarchyStateList`**:
+    ```csharp
+    public class MyNode {
+        public HierarchyStateList<MyNode> Children { get; }
+        public MyNode() { Children = new HierarchyStateList<MyNode>(this); }
+    }
+    ```
+
+Whenever a node is added to the `Children` list, the collection automatically updates the child's `ParentState` to point to the owner. It also handles clearing the parent when items are removed.
+
 ## Fine-Tuning Reactivity
 
 ### Skipping Tracking (`Sve.Untrack`)

@@ -22,13 +22,15 @@ public static class ReactiveViewport
     /// <param name="moveThreshold">Minimum movement in pixels to trigger a re-filter. Default 50.</param>
     /// <param name="scaleThreshold">Minimum scale change (0.0 to 1.0) to trigger a re-filter. Default 0.1 (10%).</param>
     /// <param name="buffer">Padding added to the viewport rectangle in world coordinates. Default 1000.</param>
+    /// <param name="onVisibilityChanged">Optional callback to receive (entered, exited) items. Useful for pausing/resuming physics.</param>
     public static Computed<IEnumerable<T>> CreateVisibleSet<T>(
         InfiniteCanvas canvas,
         State<IEnumerable<T>> source,
         Func<Rect, T, bool> isVisible,
         double moveThreshold = 50,
         double scaleThreshold = 0.1,
-        double buffer = 1000)
+        double buffer = 1000,
+        Action<IEnumerable<T>, IEnumerable<T>>? onVisibilityChanged = null)
     {
         // Internal cache state
         Matrix lastMat = Matrix.Identity;
@@ -72,6 +74,21 @@ public static class ReactiveViewport
                 if (items == null) return Enumerable.Empty<T>();
                 
                 var result = items.Where(item => isVisible(worldRect, item)).ToList();
+                
+                if (onVisibilityChanged != null)
+                {
+                    var oldSet = new HashSet<T>(lastResult);
+                    var newSet = new HashSet<T>(result);
+
+                    var entered = result.Where(x => !oldSet.Contains(x)).ToList();
+                    var exited = lastResult.Where(x => !newSet.Contains(x)).ToList();
+
+                    if (entered.Count > 0 || exited.Count > 0)
+                    {
+                        onVisibilityChanged(entered, exited);
+                    }
+                }
+
                 lastResult = result;
                 return result;
             });
@@ -87,7 +104,8 @@ public static class ReactiveViewport
         Func<T, Rect> boundsSelector,
         double moveThreshold = 50,
         double scaleThreshold = 0.1,
-        double buffer = 1000)
+        double buffer = 1000,
+        Action<IEnumerable<T>, IEnumerable<T>>? onVisibilityChanged = null)
     {
         return CreateVisibleSet(
             canvas, 
@@ -95,6 +113,7 @@ public static class ReactiveViewport
             (worldRect, item) => worldRect.Intersects(boundsSelector(item)),
             moveThreshold, 
             scaleThreshold, 
-            buffer);
+            buffer,
+            onVisibilityChanged);
     }
 }

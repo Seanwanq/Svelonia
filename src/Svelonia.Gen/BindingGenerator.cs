@@ -72,6 +72,7 @@ public class BindingGenerator : IIncrementalGenerator
         var namespacesToScan = new[] {
             "Avalonia.Controls",
             "Avalonia.Controls.Primitives",
+            "Avalonia.Controls.Shapes",
             "Avalonia.Layout",
             "Avalonia.Input"
         };
@@ -371,7 +372,7 @@ public class BindingGenerator : IIncrementalGenerator
     {
         var typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var safeName = type.ToDisplayString().Replace(".", "_").Replace("<", "").Replace(">", "");
-        sb.AppendLine($"    internal static class FluentExtensions_{safeName}_{assemblyName} {{");
+        sb.AppendLine($"    public static class FluentExtensions_{safeName}_{assemblyName} {{");
 
         var props = type.GetMembers().OfType<IPropertySymbol>()
             .Where(p => !p.IsStatic && !p.IsReadOnly && !p.IsIndexer && p.DeclaredAccessibility == Accessibility.Public &&
@@ -401,8 +402,7 @@ public class BindingGenerator : IIncrementalGenerator
             (propName == "RowDefinitions" && typeName.EndsWith("Grid")) ||
             (propName == "Text" && typeName.Contains("TextBox")) ||
             (propName == "IsChecked" && typeName.Contains("ToggleButton")) ||
-            (propName == "Value" && typeName.Contains("RangeBase")) ||
-            (propName == "BorderBrush") || (propName == "BorderThickness")) return;
+            (propName == "Value" && typeName.Contains("RangeBase"))) return;
 
         // SetX
         sb.AppendLine($"        public static T Set{propName}<T>(this T control, {propType} value, {paramType} hover = default, {paramType} pressed = default) where T : {typeName}");

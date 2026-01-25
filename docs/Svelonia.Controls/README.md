@@ -49,11 +49,17 @@ var visibleItems = ReactiveViewport.CreateVisibleSet(
 nodeCanvas.MapToChildren(visibleItems, node => RenderNode(node));
 ```
 
-## Methods
-
-### ZoomToFit
-`InfiniteCanvas` provides a `ZoomToFit` helper to automatically center and scale the view to show all content.
+### EnsureVisible
+Smoothly pans the view to bring a specific world-coordinate rectangle into focus.
 
 ```csharp
-_canvas.ZoomToFit(myContentBounds, padding: 50);
+// Simple uniform padding
+_canvas.EnsureVisible(node.Bounds, padding: 100);
+
+// Asymmetric padding (e.g., provide extra room for a top toolbar)
+_canvas.EnsureVisible(node.Bounds, padding: new Thickness(100, 250, 100, 100));
 ```
+
+---
+
+## Utilities

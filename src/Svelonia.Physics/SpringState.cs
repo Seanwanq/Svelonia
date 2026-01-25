@@ -32,6 +32,8 @@ public class SpringState : State<double>, IDisposable
     /// </summary>
     public State<double> TargetState { get; }
 
+    private bool _isSleeping;
+
     public SpringState(double initialValue) : base(initialValue)
     {
         TargetState = new State<double>(initialValue);
@@ -46,6 +48,52 @@ public class SpringState : State<double>, IDisposable
             if (Math.Abs(_simulator.Target - value) < 0.0001) return;
             _simulator.Target = value;
             TargetState.Value = value;
+            
+            if (_isSleeping)
+            {
+                // If sleeping, apply immediately (no animation)
+                _simulator.Value = value;
+                _simulator.Velocity = 0;
+                base.Value = value;
+            }
+            else
+            {
+                Start();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Puts the spring to sleep.
+    /// While sleeping, any value changes are applied immediately (teleport) without animation.
+    /// This removes the spring from the physics loop, saving CPU.
+    /// </summary>
+    public void Sleep()
+    {
+        if (_isSleeping) return;
+        _isSleeping = true;
+        
+        // Ensure we are at target before sleeping
+        SetImmediate(TargetState.Value);
+        
+        // Remove from loop (handled by SetImmediate -> Velocity=0 -> AnimationLoop will drop it naturally? 
+        // No, AnimationLoop keeps it until InternalStep returns false.
+        // But InternalStep returns false if resting.
+        // SetImmediate makes it resting.
+        // So effectively, we just need to ensure it's resting.
+    }
+
+    /// <summary>
+    /// Wakes the spring up. Future changes will be animated.
+    /// </summary>
+    public void Wake()
+    {
+        if (!_isSleeping) return;
+        _isSleeping = false;
+        
+        // If we somehow drifted or target changed, start animating
+        if (Math.Abs(_simulator.Value - _simulator.Target) > 0.001)
+        {
             Start();
         }
     }

@@ -141,6 +141,14 @@ public class InfiniteCanvas : ContentControl
     /// </summary>
     public void EnsureVisible(Rect worldRect, double padding = 100, bool instant = false)
     {
+        EnsureVisible(worldRect, new Thickness(padding), instant);
+    }
+
+    /// <summary>
+    /// Smoothly adjusts the view to keep the target rectangle visible with asymmetric padding.
+    /// </summary>
+    public void EnsureVisible(Rect worldRect, Thickness padding, bool instant = false)
+    {
         if (_isPanning) return;
 
         var mat = ViewMatrix.Value;
@@ -148,11 +156,13 @@ public class InfiniteCanvas : ContentControl
         if (size.Width <= 0 || size.Height <= 0) return;
 
         // Adaptive padding: don't let padding consume the entire screen
-        double safePaddingX = Math.Min(padding, size.Width * 0.25);
-        double safePaddingY = Math.Min(padding, size.Height * 0.25);
+        double safeL = Math.Min(padding.Left, size.Width * 0.4);
+        double safeR = Math.Min(padding.Right, size.Width * 0.4);
+        double safeT = Math.Min(padding.Top, size.Height * 0.4);
+        double safeB = Math.Min(padding.Bottom, size.Height * 0.4);
 
         var viewRect = worldRect.TransformToAABB(mat);
-        var viewport = new Rect(safePaddingX, safePaddingY, size.Width - safePaddingX * 2, size.Height - safePaddingY * 2);
+        var viewport = new Rect(safeL, safeT, size.Width - (safeL + safeR), size.Height - (safeT + safeB));
 
         if (viewport.Contains(viewRect)) 
         {
