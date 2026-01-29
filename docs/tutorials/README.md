@@ -15,6 +15,9 @@ Welcome to the deep-dive tutorials. While the main documentation provides a func
 3.  **[Custom Component Development](./03-component-deep-dive.md)**  
     Learn how to build reusable, reactive components like `InfiniteCanvas` from scratch.
 
+4.  **[Building a Rust Plugin](./04-wasi-plugin-system.md)**  
+    Learn how to use the extensible WASI plugin system to build plugins for Svelonia apps.
+
 ---
 
 > **Tip**: If you are new to Svelonia, please read the [Main Documentation](../README.md) first to get familiar with the basic API.
