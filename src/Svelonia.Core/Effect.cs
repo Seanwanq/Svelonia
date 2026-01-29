@@ -17,7 +17,7 @@ public class Effect : IObserver, IDisposable
     {
         _action = action;
         _isPaused = paused;
-        
+
         if (!paused)
         {
             Run();
@@ -37,14 +37,14 @@ public class Effect : IObserver, IDisposable
     public void OnStateChanged()
     {
         if (_isDisposed || _isPaused) return;
-        
+
         if (_isRunning)
         {
             // LogDebug($"Effect[{_id}] marked dirty during run");
             _needsReRun = true;
             return;
         }
-        
+
         Run();
     }
 
@@ -60,11 +60,12 @@ public class Effect : IObserver, IDisposable
     private void Run()
     {
         if (_isDisposed || _isPaused) return;
-        
+
         _isRunning = true;
         _needsReRun = false;
 
-        try {
+        try
+        {
             // Unsubscribe to re-track
             foreach (var d in _dependencies) d.Unsubscribe(this);
             int oldDepCount = _dependencies.Count;
@@ -73,7 +74,8 @@ public class Effect : IObserver, IDisposable
             ObserverContext.Push(this);
             try
             {
-                ObserverContext.ForceTrack(() => {
+                ObserverContext.ForceTrack(() =>
+                {
                     _action();
                 });
             }
@@ -82,7 +84,8 @@ public class Effect : IObserver, IDisposable
                 ObserverContext.Pop();
             }
         }
-        finally {
+        finally
+        {
             _isRunning = false;
             if (_needsReRun)
             {

@@ -5,284 +5,252 @@ using Avalonia.Data;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Svelonia.Core;
+using System.Reactive.Linq;
 
 namespace Svelonia.Fluent;
 
-
-
 public static class ControlExtensions
-
 {
-
     /// <summary>
-
     /// Auto-focuses the control when it is attached to the visual tree.
-
     /// </summary>
-
     public static T AutoFocus<T>(this T control)
-
         where T : Control
-
     {
-
         control.AttachedToVisualTree += (s, e) => control.Focus();
 
         return control;
-
     }
 
-
-
     /// <summary>
-
     /// Binds the focus state of the control to a State of boolean.
-
     /// When the state becomes true, the control is focused.
-
     /// </summary>
-
-    public static T BindFocus<T>(this T control, State<bool> focusState) where T : Control
-
+    public static T BindFocus<T>(this T control, State<bool> focusState)
+        where T : Control
     {
-
         Action<bool> update = focused =>
-
         {
-
-            if (focused) 
-
+            if (focused)
             {
-
                 if (!control.IsLoaded)
-
                 {
-
                     // If not loaded yet, wait for attachment
 
                     EventHandler<RoutedEventArgs>? handler = null;
 
-                    handler = (s, e) => {
-
+                    handler = (s, e) =>
+                    {
                         control.Loaded -= handler;
 
-                        if ((bool)focusState.Value) 
-
+                        if ((bool)focusState.Value)
                         {
-
-                            Avalonia.Threading.Dispatcher.UIThread.Post(() => {
-
-                                if (control.IsVisible) control.Focus();
-
-                            }, Avalonia.Threading.DispatcherPriority.Input);
-
+                            Avalonia.Threading.Dispatcher.UIThread.Post(
+                                () =>
+                                {
+                                    if (control.IsVisible)
+                                        control.Focus();
+                                },
+                                Avalonia.Threading.DispatcherPriority.Input
+                            );
                         }
-
                     };
 
                     control.Loaded += handler;
 
                     return;
-
                 }
-
-
 
                 // If already loaded, focus immediately
 
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => {
-
-                    if (control.IsVisible) control.Focus();
-
-                }, Avalonia.Threading.DispatcherPriority.Input);
-
+                Avalonia.Threading.Dispatcher.UIThread.Post(
+                    () =>
+                    {
+                        if (control.IsVisible)
+                            control.Focus();
+                    },
+                    Avalonia.Threading.DispatcherPriority.Input
+                );
             }
-
         };
-
-
 
         focusState.OnChange += update;
 
         control.RegisterDisposable(new AnonymousDisposable(() => focusState.OnChange -= update));
 
-
-
-        if (focusState.Value) update(true);
-
-
+        if (focusState.Value)
+            update(true);
 
         return control;
-
     }
-
-
 
     private class AnonymousDisposable(Action dispose) : IDisposable
-
     {
-
         public void Dispose() => dispose();
+}
 
-    }
+/// <summary>
+/// Binds a TextBox to a BufferedState, automatically handling Enter (commit) and Escape (reset).
+/// </summary>
+public static TextBox BindBufferedText(
+    this TextBox control,
+    BufferedState<string> buffer,
+    State<bool>? isEditing = null
+)
+{
+    // Rely on generated BindText (since we are using it on TextBox)
 
+    // If BindText is not generated, we'll fix it in the generator.
 
+    // AOT-Safe Binding: avoid reflection (new Binding("Value"))
+    // 1. Model -> View (OneWay)
+    // State<T> implements IObservable<object?>, so we can bind directly.
+    // We cast to string? to match TextProperty.
+    var observable = buffer.Select(x => (string?)x);
+    control.Bind(TextBox.TextProperty, observable);
 
-    /// <summary>
-
-    /// Binds a TextBox to a BufferedState, automatically handling Enter (commit) and Escape (reset).
-
-    /// </summary>
-
-    public static TextBox BindBufferedText(
-
-        this TextBox control,
-
-        BufferedState<string> buffer,
-
-        State<bool>? isEditing = null
-
-    )
-
-    {
-
-        // Rely on generated BindText (since we are using it on TextBox)
-
-        // If BindText is not generated, we'll fix it in the generator.
-
-        control.Bind(TextBox.TextProperty, buffer.ToBinding());
-
-
-
-        control.OnKey(
-
-            "Enter",
-
-            ()
-
-            =>
-
-            {
-
-                buffer.Commit();
-
-                if (isEditing != null)
-
-                    isEditing.Value = false;
-
-            },
-
-            handled: true
-
-        );
-
-
-
-        control.OnKey(
-
-            "Escape",
-
-            ()
-
-            =>
-
-            {
-
-                buffer.Reset();
-
-                if (isEditing != null)
-
-                    isEditing.Value = false;
-
-            },
-
-            handled: true
-
-        );
-
-
-
-        // Optional: Sync buffer when editing starts
-
-        if (isEditing != null)
-
+    // 2. View -> Model (OneWayToSource)
+    // Listen to Text changes and update buffer manually.
+    var sub = control.GetObservable(TextBox.TextProperty)
+        .Subscribe(newText =>
         {
+            if (buffer.Value != newText)
+                buffer.Value = newText ?? "";
+        });
 
-            isEditing.OnChange += editing =>
+    // Ensure subscription is disposed when control is detached? 
+    // Ideally we attach this to the control's lifetime.
+    // For now, in a standard page lifecycle, this is acceptable, 
+    // but for a robust framework we should use AttachedToVisualTree or similar.
+    // However, standard Bind() also returns an IDisposable. 
+    // We can composite the disposables if we were returning one, but this is a void/extension method.
+    // A common Svelonia pattern might be needed here to tie lifecycle.
+    // For this critical fix, we'll assume the risk of long-lived subscription is low for this specific TextBox, 
+    // OR we can rely on WeakSubscription if available, or just standard rx behavior.
+    // Actually, Avalonia Conrols are usually garbage collected if the parent is. 
+    // But the 'buffer' might be long lived? 
+    // If 'buffer' is long lived, 'buffer -> control' is fine (control holds ref to buffer via closure? no, buffer holds ref to control?)
+    // Wait, 'observable' holds reference to 'buffer'. 'control' holds reference to 'observable' (subscription).
+    // 'sub' holds reference to 'buffer' (in closure). 'control' event holds reference to 'sub'.
+    // So circular dependency: Control -> Sub -> Buffer. If Buffer -> Control (if Buffer observes Control?), loop.
+    // Here Buffer is just a State. It doesn't observe Control directly until we hook it up.
+    // The 'sub' makes Control hold reference to Buffer. 
+    // If Buffer is held by a ViewModel which is held by Control's DataContext, it's a typical cycle.
+    // But usually acceptable in UI trees that die together.
 
-            {
+    // To be safe, we can use control.DetachedFromVisualTree to dispose the subscription.
+    control.DetachedFromVisualTree += (s, e) => sub.Dispose();
 
-                if (editing)
+    control.OnKey(
+        "Enter",
+        () =>
+        {
+            buffer.Commit();
 
-                    buffer.Reset();
+            if (isEditing != null)
+                isEditing.Value = false;
+        },
+        handled: true
+    );
 
-            };
+    control.OnKey(
+        "Escape",
+        () =>
+        {
+            buffer.Reset();
 
-        }
+            if (isEditing != null)
+                isEditing.Value = false;
+        },
+        handled: true
+    );
 
+    // Optional: Sync buffer when editing starts
 
-
-        return control;
-
-    }
-    public static T SveBindIsVisible<T>(this T control, State<bool> state) where T : Control
+    if (isEditing != null)
     {
-        control.Bind(Visual.IsVisibleProperty, state.ToBinding());
-        return control;
+        isEditing.OnChange += editing =>
+        {
+            if (editing)
+                buffer.Reset();
+        };
     }
 
-    public static T SveBindOpacity<T>(this T control, State<double> state) where T : Control
-    {
-        control.Bind(Visual.OpacityProperty, state.ToBinding());
-        return control;
-    }
+    return control;
+}
 
-    public static T SveBindWidth<T>(this T control, State<double> state) where T : Control
-    {
-        control.Bind(Layoutable.WidthProperty, state.ToBinding());
-        return control;
-    }
+public static T SveBindIsVisible<T>(this T control, State<bool> state)
+    where T : Control
+{
+    control.Bind(Visual.IsVisibleProperty, state.ToBinding());
+    return control;
+}
 
-    public static T SveBindHeight<T>(this T control, State<double> state) where T : Control
-    {
-        control.Bind(Layoutable.HeightProperty, state.ToBinding());
-        return control;
-    }
+public static T SveBindOpacity<T>(this T control, State<double> state)
+    where T : Control
+{
+    control.Bind(Visual.OpacityProperty, state.ToBinding());
+    return control;
+}
 
-    public static T SveBindBackground<T>(this T control, State<IBrush> state) where T : Control
-    {
-        var prop = control is TemplatedControl ? TemplatedControl.BackgroundProperty
-                 : control is Border ? Border.BackgroundProperty
-                 : control is Panel ? Panel.BackgroundProperty
-                 : null;
-        if (prop != null) control.Bind(prop, state.ToBinding());
-        return control;
-    }
+public static T SveBindWidth<T>(this T control, State<double> state)
+    where T : Control
+{
+    control.Bind(Layoutable.WidthProperty, state.ToBinding());
+    return control;
+}
 
-    public static T SveSetBorderBrush<T>(this T control, IBrush? value) where T : Control
-    {
-        if (control is Border b) b.BorderBrush = value;
-        else if (control is TemplatedControl tc) tc.BorderBrush = value;
-        return control;
-    }
+public static T SveBindHeight<T>(this T control, State<double> state)
+    where T : Control
+{
+    control.Bind(Layoutable.HeightProperty, state.ToBinding());
+    return control;
+}
 
-    /// <summary>
-    /// Binds any AvaloniaProperty to a State with a fluent return.
-    /// </summary>
-    public static T SveBindState<T, V>(this T control, AvaloniaProperty<V> property, State<V> state)
-        where T : Control
-    {
-        control.Bind(property, state.ToBinding());
-        return control;
-    }
+public static T SveBindBackground<T>(this T control, State<IBrush> state)
+    where T : Control
+{
+    var prop =
+        control is TemplatedControl ? TemplatedControl.BackgroundProperty
+        : control is Border ? Border.BackgroundProperty
+        : control is Panel ? Panel.BackgroundProperty
+        : null;
+    if (prop != null)
+        control.Bind(prop, state.ToBinding());
+    return control;
+}
 
-    public static T SveBindTwoWay<T, V>(this T control, AvaloniaProperty<V> property, State<V> state)
-        where T : Control
-    {
-        var binding = new Binding("Value") { Source = state, Mode = BindingMode.TwoWay };
-        control.Bind(property, binding);
-        return control;
-    }
+public static T SveSetBorderBrush<T>(this T control, IBrush? value)
+    where T : Control
+{
+    if (control is Border b)
+        b.BorderBrush = value;
+    else if (control is TemplatedControl tc)
+        tc.BorderBrush = value;
+    return control;
+}
 
+/// <summary>
+/// Binds any AvaloniaProperty to a State with a fluent return.
+/// </summary>
+public static T SveBindState<T, V>(this T control, AvaloniaProperty<V> property, State<V> state)
+    where T : Control
+{
+    control.Bind(property, state.ToBinding());
+    return control;
+}
+
+public static T SveBindTwoWay<T, V>(
+    this T control,
+    AvaloniaProperty<V> property,
+    State<V> state
+)
+    where T : Control
+{
+    var binding = new Binding("Value") { Source = state, Mode = BindingMode.TwoWay };
+    control.Bind(property, binding);
+    return control;
+}
 }

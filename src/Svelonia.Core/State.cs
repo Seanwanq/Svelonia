@@ -12,6 +12,7 @@ namespace Svelonia.Core;
 public interface IState : IDependency, IObservable<object?>, INotifyPropertyChanged
 {
     object? ValueObject { get; }
+    void SetValueObject(object? value);
     event Action<object?>? OnChangeObject;
 }
 
@@ -35,6 +36,27 @@ public class State<T> : IState
     public event Action<object?>? OnChangeObject;
     public string? DebugName { get; set; }
     public object? ValueObject => Value;
+
+    public void SetValueObject(object? value)
+    {
+        if (value is T typedValue)
+        {
+            Value = typedValue;
+        }
+        else if (value == null && !typeof(T).IsValueType)
+        {
+            Value = default!;
+        }
+        else
+        {
+            // Try conversion if types don't match perfectly
+            try {
+                Value = (T)Convert.ChangeType(value, typeof(T))!;
+            } catch {
+                Console.WriteLine($"[State] Failed to convert {value?.GetType().Name} to {typeof(T).Name}");
+            }
+        }
+    }
 
     protected T InternalValue
     {
