@@ -76,8 +76,8 @@ public class FluentTests
     public void Conditional_Styling_Helpers_Should_Compile_And_Run()
     {
         // Just verify that calling them doesn't crash (e.g. SetStateProperty)
-        var btn = new Button();
-        btn.SetBorder(Brushes.Red, 2);
+        var button = new Button()
+            .SveSetBorderBrush(Brushes.Red);
         
         // Since we are not applying styles (no Theme loaded), we can't easily verify the result visually,
         // but we can verify no exception is thrown.
