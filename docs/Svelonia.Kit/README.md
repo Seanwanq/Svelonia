@@ -11,3 +11,6 @@
 
 2.  **[Pages & Hosting](./Pages.md)**
     The `Page` base class and the `NavigationHost` control.
+
+3.  **[Theming](./Theming.md)**
+    The JSON-based theming system, `R` class for resources, and `G` class for semantic constants.

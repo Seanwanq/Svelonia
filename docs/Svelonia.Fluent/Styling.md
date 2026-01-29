@@ -1,6 +1,7 @@
 # Fluent Styling
 
 Svelonia uses a chainable API to describe styles and property setters.
+For global theming values (Colors, Metrics), see [Svelonia.Kit Theming](../Svelonia.Kit/Theming.md).
 
 ## Basic Properties
 
