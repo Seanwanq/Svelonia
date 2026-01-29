@@ -2,6 +2,9 @@ using System;
 using System.Text;
 using Wasmtime;
 
+#pragma warning disable IL3050 // AOT JSON warning
+#pragma warning disable IL2026 // Trimming warning
+
 namespace Svelonia.Wasi;
 
 public class WasiBinder
@@ -28,9 +31,23 @@ public class WasiBinder
                 ((Action<string>)(object)callback)(s);
             }));
         }
-        else
+        else if (typeof(T1).IsPrimitive)
         {
             linker.Define(module, name, Function.FromCallback(_store, (Caller c, T1 arg1) => callback(arg1)));
+        }
+        else
+        {
+            // Complex Type -> JSON (ptr, len)
+            linker.Define(module, name, Function.FromCallback(_store, (Caller c, int ptr, int len) =>
+            {
+                var s = ReadString(c, ptr, len);
+                try
+                {
+                    var obj = System.Text.Json.JsonSerializer.Deserialize<T1>(s);
+                    if (obj != null) callback(obj);
+                }
+                catch { /* log? */ }
+            }));
         }
     }
 
@@ -90,6 +107,30 @@ public class WasiBinder
                var result = ((Func<string, string>)(object)callback)(s1);
                return WriteString(c, result);
            }));
+        }
+        else
+        {
+            // Generic JSON Fallback
+            linker.Define(module, name, Function.FromCallback(_store, (Caller c, int p1, int l1) =>
+            {
+                var s1 = ReadString(c, p1, l1);
+                T1 arg1;
+
+                if (typeof(T1) == typeof(string))
+                    arg1 = (T1)(object)s1;
+                else
+                    arg1 = System.Text.Json.JsonSerializer.Deserialize<T1>(s1)!;
+
+                var result = callback(arg1);
+
+                string resStr;
+                if (typeof(TResult) == typeof(string))
+                    resStr = (string)(object)result!;
+                else
+                    resStr = System.Text.Json.JsonSerializer.Serialize(result);
+
+                return WriteString(c, resStr);
+            }));
         }
     }
 

@@ -6,6 +6,9 @@ using System.Text.Json;
 using Svelonia.Core;
 using Wasmtime;
 
+#pragma warning disable IL3050 // AOT JSON warning
+#pragma warning disable IL2026 // Trimming warning
+
 namespace Svelonia.Wasi;
 
 public interface IWasiPlugin : IDisposable
@@ -33,10 +36,10 @@ public class WasiHost : IDisposable
         config ??= new WasiHostConfiguration();
 
         var wConfig = new Config();
-        if (config.MaxFuel.HasValue)
-        {
-            wConfig.WithFuelConsumption(true);
-        }
+        // if (config.MaxFuel.HasValue)
+        // {
+        //     wConfig.WithFuelConsumption(true);
+        // }
 
         _engine = new Engine(wConfig);
         _linker = new Linker(_engine);
@@ -135,10 +138,11 @@ public class WasiHost : IDisposable
 
     private class WasiPlugin : IWasiPlugin
     {
-        // ... existing code ...
         private readonly WasiHost _host;
         private readonly Instance _instance;
         private readonly Memory? _memory;
+        private readonly Function? _alloc;
+        private readonly Function? _free;
         public string Id { get; } = Guid.NewGuid().ToString();
 
         public WasiPlugin(WasiHost host, Module module, Store store, Linker linker)
@@ -146,6 +150,8 @@ public class WasiHost : IDisposable
             _host = host;
             _instance = linker.Instantiate(store, module);
             _memory = _instance.GetMemory("memory");
+            _alloc = _instance.GetFunction("svelonia_alloc");
+            _free = _instance.GetFunction("svelonia_free");
         }
 
         public void Initialize(WasiHost host)
@@ -165,6 +171,7 @@ public class WasiHost : IDisposable
         public string? Call(string functionName, params object[] args)
         {
             _host._currentCallingPlugin = this;
+            var ptrsToFree = new List<int>();
             try
             {
                 var func = _instance.GetFunction(functionName);
@@ -176,7 +183,9 @@ public class WasiHost : IDisposable
                 {
                     if (arg is string s)
                     {
-                        processedArgs.Add(PassString(s));
+                        var ptr = PassString(s);
+                        ptrsToFree.Add(ptr);
+                        processedArgs.Add(ptr);
                         processedArgs.Add(Encoding.UTF8.GetByteCount(s));
                     }
                     else if (arg is int i)
@@ -196,20 +205,22 @@ public class WasiHost : IDisposable
             }
             finally
             {
+                // Free allocated strings
+                foreach (var ptr in ptrsToFree)
+                {
+                    _free?.Invoke(ptr);
+                }
                 _host._currentCallingPlugin = null;
             }
         }
 
         private int PassString(string s)
         {
-            if (_memory == null)
-                return 0;
-            var alloc = _instance.GetFunction("svelonia_alloc");
-            if (alloc == null)
+            if (_memory == null || _alloc == null)
                 return 0;
 
             int len = Encoding.UTF8.GetByteCount(s);
-            int ptr = (int)alloc.Invoke(len)!;
+            int ptr = (int)_alloc.Invoke(len)!;
             _memory.WriteString(ptr, s);
             return ptr;
         }

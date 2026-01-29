@@ -15,6 +15,15 @@ public class BindingGenerator : IIncrementalGenerator
 
     private void Execute(SourceProductionContext context, Compilation compilation)
     {
+        // Guard: Only generate if Svelonia.Fluent is referenced or we are compiling Svelonia.Fluent itself
+        bool isStringsAssembly = compilation.AssemblyName == "Svelonia.Fluent";
+        bool referencesStrings = compilation.ReferencedAssemblyNames.Any(a => a.Name == "Svelonia.Fluent");
+
+        if (!isStringsAssembly && !referencesStrings)
+        {
+            return;
+        }
+
         var assemblyName = compilation.AssemblyName?.Replace(".", "_").Replace(" ", "") ?? "Unknown";
         var sb = new StringBuilder();
 
