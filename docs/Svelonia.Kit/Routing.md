@@ -50,6 +50,9 @@ The generator looks for classes inheriting from `Page` within the `Pages` namesp
 2.  **Naming**: The `Page` suffix is automatically stripped.
 3.  **Case Sensitivity**: Generated routes are lowercase.
 
+> [!NOTE]
+> **URL Convention**: Since the `Page` suffix is stripped and the name is lowercased, a file named `ChatPage.cs` will correspond to the route `/chat`, **NOT** `/ChatPage`. Accessing `/ChatPage` will result in a 404.
+
 ---
 
 ## Route Parameters
