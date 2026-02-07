@@ -32,6 +32,8 @@ internal static class HotReloadHandler
 
     public static void UpdateApplication(Type[]? updatedTypes)
     {
+        System.Diagnostics.Debug.WriteLine($"[HotReloadHandler] UpdateApplication called with {updatedTypes?.Length ?? 0} types.");
+        Console.WriteLine($"[HotReloadHandler] UpdateApplication called with {updatedTypes?.Length ?? 0} types.");
         HotReloadManager.TriggerReload();
     }
 }

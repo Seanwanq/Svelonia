@@ -89,168 +89,190 @@ public static class ControlExtensions
     private class AnonymousDisposable(Action dispose) : IDisposable
     {
         public void Dispose() => dispose();
-}
-
-/// <summary>
-/// Binds a TextBox to a BufferedState, automatically handling Enter (commit) and Escape (reset).
-/// </summary>
-public static TextBox BindBufferedText(
-    this TextBox control,
-    BufferedState<string> buffer,
-    State<bool>? isEditing = null
-)
-{
-    // Rely on generated BindText (since we are using it on TextBox)
-
-    // If BindText is not generated, we'll fix it in the generator.
-
-    // AOT-Safe Binding: avoid reflection (new Binding("Value"))
-    // 1. Model -> View (OneWay)
-    // State<T> implements IObservable<object?>, so we can bind directly.
-    // We cast to string? to match TextProperty.
-    var observable = buffer.Select(x => (string?)x);
-    control.Bind(TextBox.TextProperty, observable);
-
-    // 2. View -> Model (OneWayToSource)
-    // Listen to Text changes and update buffer manually.
-    var sub = control.GetObservable(TextBox.TextProperty)
-        .Subscribe(newText =>
-        {
-            if (buffer.Value != newText)
-                buffer.Value = newText ?? "";
-        });
-
-    // Ensure subscription is disposed when control is detached? 
-    // Ideally we attach this to the control's lifetime.
-    // For now, in a standard page lifecycle, this is acceptable, 
-    // but for a robust framework we should use AttachedToVisualTree or similar.
-    // However, standard Bind() also returns an IDisposable. 
-    // We can composite the disposables if we were returning one, but this is a void/extension method.
-    // A common Svelonia pattern might be needed here to tie lifecycle.
-    // For this critical fix, we'll assume the risk of long-lived subscription is low for this specific TextBox, 
-    // OR we can rely on WeakSubscription if available, or just standard rx behavior.
-    // Actually, Avalonia Conrols are usually garbage collected if the parent is. 
-    // But the 'buffer' might be long lived? 
-    // If 'buffer' is long lived, 'buffer -> control' is fine (control holds ref to buffer via closure? no, buffer holds ref to control?)
-    // Wait, 'observable' holds reference to 'buffer'. 'control' holds reference to 'observable' (subscription).
-    // 'sub' holds reference to 'buffer' (in closure). 'control' event holds reference to 'sub'.
-    // So circular dependency: Control -> Sub -> Buffer. If Buffer -> Control (if Buffer observes Control?), loop.
-    // Here Buffer is just a State. It doesn't observe Control directly until we hook it up.
-    // The 'sub' makes Control hold reference to Buffer. 
-    // If Buffer is held by a ViewModel which is held by Control's DataContext, it's a typical cycle.
-    // But usually acceptable in UI trees that die together.
-
-    // To be safe, we can use control.DetachedFromVisualTree to dispose the subscription.
-    control.DetachedFromVisualTree += (s, e) => sub.Dispose();
-
-    control.OnKey(
-        "Enter",
-        () =>
-        {
-            buffer.Commit();
-
-            if (isEditing != null)
-                isEditing.Value = false;
-        },
-        handled: true
-    );
-
-    control.OnKey(
-        "Escape",
-        () =>
-        {
-            buffer.Reset();
-
-            if (isEditing != null)
-                isEditing.Value = false;
-        },
-        handled: true
-    );
-
-    // Optional: Sync buffer when editing starts
-
-    if (isEditing != null)
-    {
-        isEditing.OnChange += editing =>
-        {
-            if (editing)
-                buffer.Reset();
-        };
     }
 
-    return control;
-}
+    /// <summary>
+    /// Binds the Text property of a TextBox to a State variable (Two-Way).
+    /// </summary>
+    public static TextBox BindText(this TextBox control, State<string?> state)
+    {
+        // Use standard TwoWay binding. 
+        // State<T> implements INotifyPropertyChanged, allowing Avalonia to listen to 'Value' changes.
+        // TextBox updates 'Text' property, which pushes back to state via Binding.
+        var binding = new Binding("Value")
+        {
+            Source = state,
+            Mode = BindingMode.TwoWay
+        };
+        control.Bind(TextBox.TextProperty, binding);
+        return control;
+    }
 
-public static T SveBindIsVisible<T>(this T control, State<bool> state)
-    where T : Control
-{
-    control.Bind(Visual.IsVisibleProperty, state.ToBinding());
-    return control;
-}
+    /// <summary>
+    /// Binds the Text property of a TextBox to a State variable (Two-Way), handling non-nullable string state.
+    /// </summary>
 
-public static T SveBindOpacity<T>(this T control, State<double> state)
-    where T : Control
-{
-    control.Bind(Visual.OpacityProperty, state.ToBinding());
-    return control;
-}
 
-public static T SveBindWidth<T>(this T control, State<double> state)
-    where T : Control
-{
-    control.Bind(Layoutable.WidthProperty, state.ToBinding());
-    return control;
-}
+    /// <summary>
+    /// Binds a TextBox to a BufferedState, automatically handling Enter (commit) and Escape (reset).
+    /// </summary>
+    public static TextBox BindBufferedText(
+        this TextBox control,
+        BufferedState<string> buffer,
+        State<bool>? isEditing = null
+    )
+    {
+        // Rely on generated BindText (since we are using it on TextBox)
 
-public static T SveBindHeight<T>(this T control, State<double> state)
-    where T : Control
-{
-    control.Bind(Layoutable.HeightProperty, state.ToBinding());
-    return control;
-}
+        // If BindText is not generated, we'll fix it in the generator.
 
-public static T SveBindBackground<T>(this T control, State<IBrush> state)
-    where T : Control
-{
-    var prop =
-        control is TemplatedControl ? TemplatedControl.BackgroundProperty
-        : control is Border ? Border.BackgroundProperty
-        : control is Panel ? Panel.BackgroundProperty
-        : null;
-    if (prop != null)
-        control.Bind(prop, state.ToBinding());
-    return control;
-}
+        // AOT-Safe Binding: avoid reflection (new Binding("Value"))
+        // 1. Model -> View (OneWay)
+        // State<T> implements IObservable<object?>, so we can bind directly.
+        // We cast to string? to match TextProperty.
+        var observable = buffer.Select(x => (string?)x);
+        control.Bind(TextBox.TextProperty, observable);
 
-public static T SveSetBorderBrush<T>(this T control, IBrush? value)
-    where T : Control
-{
-    if (control is Border b)
-        b.BorderBrush = value;
-    else if (control is TemplatedControl tc)
-        tc.BorderBrush = value;
-    return control;
-}
+        // 2. View -> Model (OneWayToSource)
+        // Listen to Text changes and update buffer manually.
+        var sub = control.GetObservable(TextBox.TextProperty)
+            .Subscribe(newText =>
+            {
+                if (buffer.Value != newText)
+                    buffer.Value = newText ?? "";
+            });
 
-/// <summary>
-/// Binds any AvaloniaProperty to a State with a fluent return.
-/// </summary>
-public static T SveBindState<T, V>(this T control, AvaloniaProperty<V> property, State<V> state)
-    where T : Control
-{
-    control.Bind(property, state.ToBinding());
-    return control;
-}
+        // Ensure subscription is disposed when control is detached? 
+        // Ideally we attach this to the control's lifetime.
+        // For now, in a standard page lifecycle, this is acceptable, 
+        // but for a robust framework we should use AttachedToVisualTree or similar.
+        // However, standard Bind() also returns an IDisposable. 
+        // We can composite the disposables if we were returning one, but this is a void/extension method.
+        // A common Svelonia pattern might be needed here to tie lifecycle.
+        // For this critical fix, we'll assume the risk of long-lived subscription is low for this specific TextBox, 
+        // OR we can rely on WeakSubscription if available, or just standard rx behavior.
+        // Actually, Avalonia Conrols are usually garbage collected if the parent is. 
+        // But the 'buffer' might be long lived? 
+        // If 'buffer' is long lived, 'buffer -> control' is fine (control holds ref to buffer via closure? no, buffer holds ref to control?)
+        // Wait, 'observable' holds reference to 'buffer'. 'control' holds reference to 'observable' (subscription).
+        // 'sub' holds reference to 'buffer' (in closure). 'control' event holds reference to 'sub'.
+        // So circular dependency: Control -> Sub -> Buffer. If Buffer -> Control (if Buffer observes Control?), loop.
+        // Here Buffer is just a State. It doesn't observe Control directly until we hook it up.
+        // The 'sub' makes Control hold reference to Buffer. 
+        // If Buffer is held by a ViewModel which is held by Control's DataContext, it's a typical cycle.
+        // But usually acceptable in UI trees that die together.
 
-public static T SveBindTwoWay<T, V>(
-    this T control,
-    AvaloniaProperty<V> property,
-    State<V> state
-)
-    where T : Control
-{
-    var binding = new Binding("Value") { Source = state, Mode = BindingMode.TwoWay };
-    control.Bind(property, binding);
-    return control;
-}
+        // To be safe, we can use control.DetachedFromVisualTree to dispose the subscription.
+        control.DetachedFromVisualTree += (s, e) => sub.Dispose();
+
+        control.OnKey(
+            "Enter",
+            () =>
+            {
+                buffer.Commit();
+
+                if (isEditing != null)
+                    isEditing.Value = false;
+            },
+            handled: true
+        );
+
+        control.OnKey(
+            "Escape",
+            () =>
+            {
+                buffer.Reset();
+
+                if (isEditing != null)
+                    isEditing.Value = false;
+            },
+            handled: true
+        );
+
+        // Optional: Sync buffer when editing starts
+
+        if (isEditing != null)
+        {
+            isEditing.OnChange += editing =>
+            {
+                if (editing)
+                    buffer.Reset();
+            };
+        }
+
+        return control;
+    }
+
+    public static T SveBindIsVisible<T>(this T control, State<bool> state)
+        where T : Control
+    {
+        control.Bind(Visual.IsVisibleProperty, state.ToBinding());
+        return control;
+    }
+
+    public static T SveBindOpacity<T>(this T control, State<double> state)
+        where T : Control
+    {
+        control.Bind(Visual.OpacityProperty, state.ToBinding());
+        return control;
+    }
+
+    public static T SveBindWidth<T>(this T control, State<double> state)
+        where T : Control
+    {
+        control.Bind(Layoutable.WidthProperty, state.ToBinding());
+        return control;
+    }
+
+    public static T SveBindHeight<T>(this T control, State<double> state)
+        where T : Control
+    {
+        control.Bind(Layoutable.HeightProperty, state.ToBinding());
+        return control;
+    }
+
+    public static T SveBindBackground<T>(this T control, State<IBrush> state)
+        where T : Control
+    {
+        var prop =
+            control is TemplatedControl ? TemplatedControl.BackgroundProperty
+            : control is Border ? Border.BackgroundProperty
+            : control is Panel ? Panel.BackgroundProperty
+            : null;
+        if (prop != null)
+            control.Bind(prop, state.ToBinding());
+        return control;
+    }
+
+    public static T SveSetBorderBrush<T>(this T control, IBrush? value)
+        where T : Control
+    {
+        if (control is Border b)
+            b.BorderBrush = value;
+        else if (control is TemplatedControl tc)
+            tc.BorderBrush = value;
+        return control;
+    }
+
+    /// <summary>
+    /// Binds any AvaloniaProperty to a State with a fluent return.
+    /// </summary>
+    public static T SveBindState<T, V>(this T control, AvaloniaProperty<V> property, State<V> state)
+        where T : Control
+    {
+        control.Bind(property, state.ToBinding());
+        return control;
+    }
+
+    public static T SveBindTwoWay<T, V>(
+        this T control,
+        AvaloniaProperty<V> property,
+        State<V> state
+    )
+        where T : Control
+    {
+        var binding = new Binding("Value") { Source = state, Mode = BindingMode.TwoWay };
+        control.Bind(property, binding);
+        return control;
+    }
 }
