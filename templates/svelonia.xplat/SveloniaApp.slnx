@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="SveloniaApp/SveloniaApp.csproj" />
+  <Project Path="SveloniaApp.Desktop/SveloniaApp.Desktop.csproj" />
+  <Project Path="SveloniaApp.Android/SveloniaApp.Android.csproj" />
+  <Project Path="SveloniaApp.Browser/SveloniaApp.Browser.csproj" />
+</Solution>

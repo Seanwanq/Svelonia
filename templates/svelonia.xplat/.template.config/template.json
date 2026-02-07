@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json.schemastore.org/template",
+    "author": "Sean Wang",
+    "classifications": [
+        "Avalonia",
+        "Svelte",
+        "Svelonia",
+        "Cross Platform",
+        "UI"
+    ],
+    "name": "Svelonia Cross-Platform App",
+    "identity": "Svelonia.XPlat",
+    "groupIdentity": "Svelonia.XPlat",
+    "shortName": "svelonia.xplat",
+    "tags": {
+        "language": "C#",
+        "type": "project"
+    },
+    "sourceName": "SveloniaApp",
+    "preferNameDirectory": true,
+    "symbols": {
+        "Aot": {
+            "type": "parameter",
+            "datatype": "bool",
+            "defaultValue": "false",
+            "displayName": "Native AOT",
+            "description": "Enable Native AOT publishing."
+        }
+    }
+}
